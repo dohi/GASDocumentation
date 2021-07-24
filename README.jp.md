@@ -465,38 +465,40 @@ virtual void StunTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
 ### 4.3 Attributes
 
 <a name="concepts-a-definition"></a>
-#### 4.3.1 Attribute Definition
-`Attributes` are float values defined by the struct [`FGameplayAttributeData`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/FGameplayAttributeData/index.html). These can represent anything from the amount of health a character has to the character's level to the number of charges that a potion has. If it is a gameplay-related numerical value belonging to an `Actor`, you should consider using an `Attribute` for it. `Attributes` should generally only be modified by [`GameplayEffects`](#concepts-ge) so that the ASC can [predict](#concepts-p) the changes.
+#### 4.3.1 アトリビュートの定義
+`属性`は構造体[`FGameplayAttributeData`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/FGameplayAttributeData/index.html)によって定義される浮動小数点値です。キャラクタのレベルに対するヘルスの量や、ポーションのチャージ数などを表すことができます。もしそれが `Actor` に属するゲームプレイ関連の数値であれば、`Attribute` の使用を検討すべきです。`属性`は一般的に、ASCがその変化を予測できるように、[`GameplayEffects`](#concepts-ge)によってのみ変更されるべきです。
 
-`Attributes` are defined by and live in an [`AttributeSet`](#concepts-as). The `AttributeSet` is responsible for replicating `Attributes` that are marked for replication. See the section on [`AttributeSets`](#concepts-as) for how to define `Attributes`.
+属性は[`AttributeSet`](#concepts-as)によって定義され、その中に存在します。`AttributeSet`は複製用にマークされた`Attribute`を複製する責任があります。`Attributes`の定義方法については、[`AttributeSets`](#concepts-as)のセクションを参照してください。
 
-**Tip:** If you don't want an `Attribute` to show up in the Editor's list of `Attributes`, you can use the `Meta = (HideInDetailsView)` `property specifier`.
+**Tip:** エディタの`Attribute`リストに`Attribute`を表示させたくない場合は、`Meta = (HideInDetailsView)`プロパティ指定子を使用することができます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-a-value"></a>
-#### 4.3.2 BaseValue vs CurrentValue
-An `Attribute` is composed of two values - a `BaseValue` and a `CurrentValue`. The `BaseValue` is the permanent value of the `Attribute` whereas the `CurrentValue` is the `BaseValue` plus temporary modifications from `GameplayEffects`. For example, your `Character` may have a movespeed `Attribute` with a `BaseValue` of 600 units/second. Since there are no `GameplayEffects` modifying the movespeed yet, the `CurrentValue` is also 600 u/s. If she gets a temporary 50 u/s movespeed buff, the `BaseValue` stays the same at 600 u/s while the `CurrentValue` is now 600 + 50 for a total of 650 u/s. When the movespeed buff expires, the `CurrentValue` reverts back to the `BaseValue` of 600 u/s.
+#### 4.3.2 ベース値とカレント値の比較
+`Attribute`は`BaseValue`と`CurrentValue`の2つの値で構成されます。`BaseValue`は`Attribute`の永続的な値であり、`CurrentValue`は`BaseValue`に`GameplayEffects`による一時的な変更を加えたものです。例えば、あなたの`キャラクター`は、`BaseValue`が600ユニット/秒の`movespeed`属性を持っているとします。まだ移動速度を変更する`GameplayEffects`がないので、`CurrentValue`も600u/sになっています。もし一時的に50 u/sの移動速度バフを得た場合、`BaseValue`は600 u/sのままですが、`CurrentValue`は600 + 50で合計650 u/sとなります。移動速度バフが切れると、 `CurrentValue` は `BaseValue` である600u/sに戻ります。
 
-Often beginners to GAS will confuse `BaseValue` with a maximum value for an `Attribute` and try to treat it as such. This is an incorrect approach. Maximum values for `Attributes` that can change or are referenced in abilities or UI should be treated as separate `Attributes`. For hardcoded maximum and minimum values, there is a way to define a `DataTable` with `FAttributeMetaData` that can set maximum and minimum values, but Epic's comment above the struct calls it a "work in progress". See `AttributeSet.h` for more information. To prevent confusion, I recommend that maximum values that can be referenced in abilities or UI be made as separate `Attributes` and hardcoded maximum and minimum values that are only used for clamping `Attributes` be defined as hardcoded floats in the `AttributeSet`. Clamping of `Attributes` is discussed in [PreAttributeChange()](#concepts-as-preattributechange) for changes to the `CurrentValue` and [PostGameplayEffectExecute()](#concepts-as-postgameplayeffectexecute) for changes to the `BaseValue` from `GameplayEffects`.
+よくGAS初心者の方が、 `BaseValue` を `Attribute` の最大値と混同して、そのように扱おうとすることがあります。これは間違ったアプローチです。変化する可能性があったり、アビリティやUIで参照される`Attribute`の最大値は、別の`Attribute`として扱うべきです。ハードコードされた最大値と最小値については、最大値と最小値を設定できる `FAttributeMetaData` を持つ `DataTable` を定義する方法がありますが、構造体の上にある Epic のコメントでは、`WIP`となっています。詳細は `AttributeSet.h` を参照してください。混乱を防ぐために、アビリティやUIで参照できる最大値は別の`Attributes`として作り、`Attributes`のクランプにのみ使用されるハードコードされた最大値と最小値は`AttributeSet`の中でハードコードされた浮動小数点として定義することをお勧めします。`Attributes`のクランプについて、`CurrentValue`への変更は[PreAttributeChange()](#concepts-as-preattributechange)、`GameplayEffects`による`BaseValue`への変更は[PostGameplayEffectExecute()](#concepts-as-postgameplayeffectexecute)で説明します。
 
-Permanent changes to the `BaseValue` come from `Instant` `GameplayEffects` whereas `Duration` and `Infinite` `GameplayEffects` change the `CurrentValue`. Periodic `GameplayEffects` are treated like instant `GameplayEffects` and change the `BaseValue`.
+`Instant` `GameplayEffect`は`BaseValue`を恒久的に変化させ、`Duration`と`Infinite` `GameplayEffect`は`CurrentValue`を変化させます。`Periodic` `GameplayEffects`は`Instant` `GameplayEffects`と同様に扱われ、`BaseValue`を変更します。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-a-meta"></a>
-#### 4.3.3 Meta Attributes
-Some `Attributes` are treated as placeholders for temporary values that are intended to interact with `Attributes`. These are called `Meta Attributes`. For example, we commonly define damage as a `Meta Attribute`. Instead of a `GameplayEffect` directly changing our health `Attribute`, we use a `Meta Attribute` called damage as a placeholder. This way the damage value can be modified with buffs and debuffs in an [`GameplayEffectExecutionCalculation`](#concepts-ge-ec) and can be further manipulated in the `AttributeSet`, for example subtracting the damage from a current shield `Attribute`, before finally subtracting the remainder from the health `Attribute`. The damage `Meta Attribute` has no persistence between `GameplayEffects` and is overriden by every one. `Meta Attributes` are not typically replicated.
+#### 4.3.3 Meta Attributes: メタ属性
+いくつかの `Attributes` は、`Attributes` と相互作用することを意図した一時的な値のプレースホルダーとして扱われます。これを`メタ属性`と呼びます。例えば、一般的にはダメージを`メタ属性`として定義します。`GameplayEffect` がヘルスの`Attribute`を直接変更する代わりに、`damage`という`メタ属性`をプレースホルダーとして使用します。これにより、ダメージの値は[`GameplayEffectExecutionCalculation`](#concepts-ge-ec)の中でバフやデバフを使って修正することができ、さらに`AttributeSet`の中で操作することができます。例えば、現在のシールドの`Attribute`からダメージを引いて、最後に残りをヘルスの`Attribute`から引くことができます。ダメージの`メタ属性`は`GameplayEffects`の間では持続性がなく、すべての`メタ属性`によって上書きされます。`メタ属性`は通常、複製されません。
 
-`Meta Attributes` provide a good logical separation for things like damage and healing between "How much damage did we do?" and "What do we do with this damage?". This logical separation means our `Gameplay Effects` and `Execution Calculations` don't need to know how the Target handles the damage. Continuing our damage example, the `Gameplay Effect` determines how much damage and then the `AttributeSet` decides what to do with that damage. Not all characters may have the same `Attributes`, especially if you use subclassed `AttributeSets`. The base `AttributeSet` class may only have a health `Attribute`, but a subclassed `AttributeSet` may add a shield `Attribute`. The subclassed `AttributeSet` with the shield `Attribute` would distribute the damage received differently than the base `AttributeSet` class.
+`メタ属性`はダメージやヒーリングのようなものに対して、「どれだけのダメージを与えたか」と「このダメージで何をするか」を論理的に分離するのに適しています。この論理的な分離は、我々の`GameplayEffects`や`Execution Calculations`が、ターゲットがダメージをどのように処理するかを知る必要がないことを意味します。ダメージの例を続けると、`GameplayEffects`がどれだけのダメージを与えるかを決定し、次に`AttributeSet`がそのダメージをどうするかを決定します。すべてのキャラクターが同じ`Attribute`を持つとは限りません。特にサブクラス化された`AttributeSet`を使用する場合はそうです。ベースの `AttributeSet` クラスはヘルスの `Attribute` しか持たないかもしれませんが、サブクラス化された `AttributeSet` はシールドの `Attribute` を追加することができます。盾の属性を持つサブクラス化された `AttributeSet` は、受けたダメージをベースの `AttributeSet` クラスとは違った形で分配します。
 
-While `Meta Attributes` are a good design pattern, they are not mandatory. If you only ever have one `Execution Calculation` used for all instances of damage and one `Attribute Set` class shared by all characters, then you may be fine doing the damage distribution to health, shields, etc. inside of the `Execution Calculation` and directly modifying those `Attributes`. You'll only be sacrificing flexibility, but that may be okay for you.
+`メタ属性` は良いデザインパターンですが、必須ではありません。すべてのダメージのインスタンスに使用される `Execution Calculation` が1つだけで、すべてのキャラクターで共有される `AttributeSet` クラスが1つだけの場合は、ヘルスやシールドなどへのダメージ分配を `Execution Calculation` の中で行い、それらの `Attribute` を直接変更するのが良いでしょう。柔軟性が犠牲になるだけですが、それでいいと思います。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-a-changes"></a>
-#### 4.3.4 Responding to Attribute Changes
-To listen for when an `Attribute` changes to update the UI or other gameplay, use `UAbilitySystemComponent::GetGameplayAttributeValueChangeDelegate(FGameplayAttribute Attribute)`. This function returns a delegate that you can bind to that will be automatically called whenever an `Attribute` changes. The delegate provides a `FOnAttributeChangeData` parameter with the `NewValue`, `OldValue`, and `FGameplayEffectModCallbackData`. **Note:** The `FGameplayEffectModCallbackData` will only be set on the server.
+#### 4.3.4 属性の変更への対応
+UIや他のゲームプレイを更新するために`Attribute`が変更されたときにリッスンするには、`UAbilitySystemComponent::GetGamaplayAttributeValueChangeDelegate(FGameplayAttribute Attribute)`を使用します。この関数は、バインドできるデリゲートを返します。このデリゲートは、`Attribute`が変更されるたびに自動的に呼び出されます。このデリゲートは、`NewValue`, `OldValue`, `FGameplayEffectModCallbackData`を含む`FOnAttributeChangeData`パラメータを提供します。
+
+**注意** `FGameplayEffectModCallbackData` はサーバー上でのみ設定されます。
 
 ```c++
 AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSetBase->GetHealthAttribute()).AddUObject(this, &AGDPlayerState::HealthChanged);
@@ -506,27 +508,27 @@ AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSetBase
 virtual void HealthChanged(const FOnAttributeChangeData& Data);
 ```
 
-The Sample Project binds to the `Attribute` value changed delegates on the `GDPlayerState` to update the HUD and to respond to player death when health reaches zero.
+サンプルプロジェクトでは、`Attribute`値を変更した`GDPlayerState`上のデリゲートにバインドして、HUDを更新したり、ヘルスがゼロになったときにプレイヤーの死に応答したりします。
 
-A custom Blueprint node that wraps this into an `ASyncTask` is included in the Sample Project. It is used in the `UI_HUD` UMG Widget to update the health, mana, and stamina values. This `AsyncTask` will live forever until manually called `EndTask()`, which we do in the UMG Widget's `Destruct` event. See `AsyncTaskAttributeChanged.h/cpp`.
+これを `ASyncTask` にラップしたカスタム ブループリント ノードがサンプル プロジェクトに含まれています。これは `UI_HUD` UMG ウィジェットで使用され、ヘルス、マナ、スタミナの値を更新します。この `AsyncTask` は、手動で `EndTask()` が呼ばれるまで永遠に存続しますが、これは UMG Widget の `Destruct` イベントで行います。AsyncTaskAttributeChanged.h/cpp`を参照してください。
 
 ![Listen for Attribute Change BP Node](https://github.com/dohi/GASDocumentation/raw/master/Images/attributechange.png)
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-a-derived"></a>
-#### 4.3.5 Derived Attributes
-To make an `Attribute` that has some or all of its value derived from one or more other `Attributes`, use an `Infinite` `GameplayEffect` with one or more `Attribute Based` or [`MMC`](#concepts-ge-mmc) [`Modifiers`](#concepts-ge-mods). The `Derived Attribute` will update automatically when an `Attribute` that it depends on is updated.
+#### 4.3.5 Derived Attributes: 派生型属性
+1つまたは複数の他の `Attribute` から値の一部またはすべてを派生させた `Attribute` を作成するには、1つまたは複数の `Attribute Based` または [`MMC`](#concepts-ge-mmc) [`Modifiers`](#concepts-ge-mods)を使用した `Infinite` `GameplayEffect` を使用します。`Derived Attribute`は、依存する `Attribute` が更新されると自動的に更新されます。
 
-The final formula for all the `Modifiers` on a `Derived Attribute` is the same formula for `Modifier Aggregators`. If you need calculations to happen in a certain order, do it all inside of an `MMC`.
+`Derived Attribute` のすべての `Modifier` の最終的な計算式は、 `Modifier Aggregators` の計算式と同じです。一定の順序で計算を行う必要がある場合には、すべてを `MMC` の中で行います。
 
 ```
 ((CurrentValue + Additive) * Multiplicitive) / Division
 ```
 
-**Note:** If playing with multiple clients in PIE, you need to disable `Run Under One Process` in the Editor Preferences otherwise the `Derived Attributes` will not update when their independent `Attributes` update on clients other than the first.
+**注意:** PIEで複数クライアントでプレイする場合、エディタ設定で `Run Under One Process`を無効にする必要があります。そうしないと、最初のクライアント以外のクライアントで、独立した`Attributes`が更新されても、 `Derived Attributes` は更新されません。
 
-In this example, we have an `Infinite` `GameplayEffect` that derives the value of `TestAttrA` from the `Attributes`, `TestAttrB` and `TestAttrC`, in the formula `TestAttrA = (TestAttrA + TestAttrB) * ( 2 * TestAttrC)`. `TestAttrA` recalculates its value automatically whenever any of the `Attributes` update their values.
+この例では、`Infinite` の `GameplayEffect` が、`TestAttrA = (TestAttrA + TestAttrB) * ( 2 * TestAttrC)` という式で、`Attribute` の `TestAttrB` と `TestAttrC` から `TestAttrA` の値を導き出しています。`TestAttrA` は，いずれかの `Attribute` が値を更新するたびに，その値を自動的に再計算します。
 
 ![Derived Attribute Example](https://github.com/dohi/GASDocumentation/raw/master/Images/derivedattribute.png)
 
@@ -536,57 +538,56 @@ In this example, we have an `Infinite` `GameplayEffect` that derives the value o
 ### 4.4 Attribute Set
 
 <a name="concepts-as-definition"></a>
-#### 4.4.1 Attribute Set Definition
-The `AttributeSet` defines, holds, and manages changes to `Attributes`. Developers should subclass from [`UAttributeSet`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UAttributeSet/index.html). Creating an `AttributeSet` in an `OwnerActor's` constructor automatically registers it with its `ASC`. **This must be done in C++**.
+`AttributeSet`は`Attribute`の変更を定義、保持、管理します。開発者は[`UAttributeSet`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UAttributeSet/index.html)のサブクラスを作成する必要があります。`OwnerActor`のコンストラクタで`AttributeSet`を作成すると，自動的にその`ASC`に登録されます．**これはC++で行う必要があります**。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-as-design"></a>
-#### 4.4.2 Attribute Set Design
-An `ASC` may have one or many `AttributeSets`. AttributeSets have negligible memory overhead so how many `AttributeSets` to use is an organizational decision left up to the developer.
+#### 4.4.2 属性セットの設計
+`ASC`は1つまたは複数の`AttributeSets`を持つことができます。`アトリビュートセット`はメモリのオーバーヘッドがほとんどないので、いくつの`アトリビュートセット`を使うかは開発者に任されています。
 
-It is acceptable to have one large monolithic `AttributeSet` shared by every `Actor` in your game and only use attributes if needed while ignoring unused attributes.
+ゲーム内のすべての`Actor`が共有する1つの大きなモノリシックな`AttributeSet`を持ち、必要な場合にのみアトリビュートを使用し、未使用のアトリビュートは無視することも可能です。
 
-Alternatively, you may choose to have more than one `AttributeSet` representing groupings of `Attributes` that you selectively add to your `Actors` as needed. For example, you could have an `AttributeSet` for health related `Attributes`, an `AttributeSet` for mana related `Attributes`, and so on. In a MOBA game, heroes might need mana but minions might not. Therefore the heroes would get the mana `AttributeSet` and minions would not.
+また、必要に応じて `Actor` に選択的に追加する `Attribute` のグループを表す複数の `AttributeSet` を持つこともできます。例えば、ヘルス関連の `AttributeSet` や、マナ関連の `AttributeSet` などが考えられます。MOBAゲームでは、ヒーローはマナを必要としますが、ミニオンは必要ありません。そのため、ヒーローはマナ用の`AttributeSet`を取得し、ミニオンは取得しません。
 
-Additionally, `AttributeSets` can be subclassed as another means of selectively choosing which `Attributes` an `Actor` has. `Attributes` are internally referred to as `AttributeSetClassName.AttributeName`. When you subclass an `AttributeSet`, all of the `Attributes` from the parent class will still have the parent class's name as the prefix.
+さらに、`AttributeSets`は、`Actor`が持つ`Attribute`を選択的に選択する別の手段として、サブクラス化することができます。`Attribute`は内部的には`AttributeSetClassName.AttributeName`と呼ばれます。`AttributeSet`をサブクラス化すると、親クラスのすべての`Attribute`は親クラスの名前をプレフィックスとして持ちます。
 
-While you can have more than one `AttributeSet`, you should not have more than one `AttributeSet` of the same class on an `ASC`. If you have more than one `AttributeSet` from the same class, it won't know which `AttributeSet` to use and will just pick one.
+複数の `AttributeSet` を持つことができますが、1つの `ASC` に同じクラスの `AttributeSet` を複数持つべきではありません。同じクラスの`AttributeSet`が複数あると、どの`AttributeSet`を使えばいいのかわからなくなり、1つを選んでしまいます。
 
 <a name="concepts-as-design-subcomponents"></a>
-##### 4.4.2.1 Subcomponents with Individual Attributes
-In the scenario where you have multiple damageable components on a `Pawn` like individually damageable armor pieces, I recommend that if you know the maximum number of damageable components that a `Pawn` could have to make that many health `Attributes` on one `AttributeSet` - DamageableCompHealth0, DamageableCompHealth1, etc. to represent logical 'slots' for those damageable components. In your damageable component class instance, assign the slot number `Attribute` that can be read by `GameplayAbilities` or [`Executions`](#concepts-ge-ec) to know which `Attribute` to apply damage to. `Pawns` that have less than the maximum number or zero of damageable components are fine. Just because a `AttributeSet` has an `Attribute`, doesn't mean that you have to use it. Unused `Attributes` take up trivial amount of memory.
+##### 4.4.2.1 個々の属性を持つサブコンポーネント
+個別にダメージを与えることができるアーマーピースのような、`Pawn`に複数のダメージを与えることができるコンポーネントがある場合、ダメージを与えることができるコンポーネントの最大数がわかっているのであれば、それらのコンポーネントの論理的な`Slot`を表すために、1つの`AttributeSet`に、DamageableCompHealth0、DamageableCompHealth1などのヘルスの`Attribute`をたくさん作ることをお勧めします。ダメージを受けやすいコンポーネントのクラスインスタンスには、スロット番号である`Attribute`を割り当てます。これは`GameplayAbilities`や[`Executions`](#concepts-ge-ec)で読み取ることができ、どの`Attribute`にダメージを適用するかを知ることができます。ダメージを与えることができるコンポーネントの数が最大値よりも少ないか、ゼロである`Pawn`は問題ありません。`AttributeSet`に`Attribute`が含まれているからといって、それを使わなければならないわけではありません。未使用の `Attribute` は些細な量のメモリを消費します。
 
-If your subcomponents need many `Attributes` each, there's potentially an unbounded number of subcomponents, the subcomponents can detach and be used by other players (e.g. weapons), or for any other reason this approach doesn't work for you, I'd recommend switching away from `Attributes` and instead store plain old floats on the components. See [Item Attributes](#concepts-as-design-itemattributes).
+サブコンポーネントがそれぞれ多くの `Attribute` を必要とする場合や、サブコンポーネントの数が無限大になる可能性がある場合、サブコンポーネントが切り離されて他のプレイヤーに使用される可能性がある場合 (例: 武器)、またはその他の理由でこのアプローチがうまくいかない場合は、`Attribute` をやめて、代わりにコンポーネントに普通の浮動小数点数を保存することをお勧めします。[Item Attributes](#concepts-as-design-itemattributes)を参照してください。
 
 <a name="concepts-as-design-addremoveruntime"></a>
-##### 4.4.2.2 Adding and Removing AttributeSets at Runtime
-`AttributeSets` can be added and removed from an `ASC` at runtime; however, removing `AttributeSets` can be dangerous. For example, if an `AttributeSet` is removed on a client before the server and an `Attribute` value change is replicated to client, the `Attribute` won't find its `AttributeSet` and crash the game.
+##### 4.4.2.2 ランタイムでのAttributeSetsの追加と削除
+`AttributeSets` は実行時に `ASC` に追加したり削除したりすることができます。しかし、`AttributeSets` を削除することは危険な場合があります。例えば、サーバーよりも先にクライアントで `AttributeSet` が削除され、`Attribute` の値の変更がクライアントにレプリケートされると、`Attribute` がその `AttributeSet` を見つけられず、ゲームがクラッシュします。
 
-On weapon add to inventory:
+武器がインベントリに追加されたとき：
 ```c++
 AbilitySystemComponent->GetSpawnedAttributes_Mutable().AddUnique(WeaponAttributeSetPointer);
 AbilitySystemComponent->ForceReplication();
 ```
 
-On weapon remove from inventory:
+武器がインベントリから削除されたとき：
 ```c++
 AbilitySystemComponent->GetSpawnedAttributes_Mutable().Remove(WeaponAttributeSetPointer);
 AbilitySystemComponent->ForceReplication();
 ```
 <a name="concepts-as-design-itemattributes"></a>
 ##### 4.4.2.3 Item Attributes (Weapon Ammo)
-There's a few ways to implement equippable items with `Attributes` (weapon ammo, armor durability, etc). All of these approaches store values directly on the item. This is necessary for items that can be equipped by more than one player over its lifetime.
+装備可能なアイテムに`Attributes`を実装する方法はいくつかあります(武器の弾薬、アーマーの耐久性など)。これらの方法はすべて、アイテムに直接値を保存します。これは、生涯にわたって複数のプレイヤーが装備可能なアイテムの場合には必要です。
 
-> 1. Use plain floats on the item (**Recommended**)
-> 1. Separate `AttributeSet` on the item
-> 1. Separate `ASC` on the item
+> 1. アイテム上でプレーンなフロートを使用する(**推奨**)
+> 1. アイテム上で `AttributeSet` を分離する。
+> 1. アイテム上で `ASC` を分離する。
 
 <a name="concepts-as-design-itemattributes-plainfloats"></a>
-###### 4.4.2.3.1 Plain Floats on the Item
-Instead of `Attributes`, store plain float values on the item class instance. Fortnite and [GASShooter](https://github.com/dohi/GASShooter) handle gun ammo this way. For a gun, store the max clip size, current ammo in clip, reserve ammo, etc directly as replicated floats (`COND_OwnerOnly`) on the gun instance. If weapons share reserve ammo, you would move the reserve ammo onto the character as an `Attribute` in a shared ammo `AttributeSet` (reload abilities can use a `Cost GE` to pull from reserve ammo into the gun's float clip ammo). Since you're not using `Attributes` for current clip ammo, you will need to override some functions in `UGameplayAbility` to check and apply cost against the floats on the gun. Making the gun the `SourceObject` in the [`GameplayAbilitySpec`](https://github.com/dohi/GASDocumentation#concepts-ga-spec) when granting the ability means you'll have access to the gun that granted the ability inside the ability.
+###### 4.4.2.3.1 アイテム上のプレーンフロート
+`Attributes`の代わりに、アイテムクラスのインスタンスにplain floatの値を格納します。Fortniteや[GASShooter](https://github.com/dohi/GASShooter)では、この方法で銃の弾薬を扱っています。銃の場合は、最大クリップサイズ、クリップ内の現在の弾薬、予備弾薬などを、複製された浮動小数点数 (`COND_OwnerOnly`) として、銃のインスタンスに直接格納します。武器が予備弾薬を共有している場合は、予備弾薬を共有弾薬の`AttributeSet`の`Attribute`としてキャラクターに移動させます(リロード能力は、`Cost GE`を使用して、予備弾薬から銃のフロートクリップ弾薬に引き込むことができます)。現在のクリップ弾薬に `Attribute` を使用していないので、銃のフロート弾薬に対してコストをチェックして適用するために、`UGameplayAbility` のいくつかの関数をオーバーライドする必要があります。アビリティを付与する際に[`GameplayAbilitySpec`](https://github.com/dohi/GASDocumentation#concepts-ga-spec)で銃を`SourceObject`にすることで、アビリティの中でアビリティを付与した銃にアクセスできるようになります。
 
-To prevent the gun from replicating back the ammo amount and clobbering the local ammo amount during automatic fire, disable replication while the player has a `IsFiring` `GameplayTag` in `PreReplication()`. You're essentially doing your own local prediction here.
+自動射撃中に銃が弾薬量を複製してローカルの弾薬量を奪うのを防ぐために、プレイヤーが `PreReplication()` で `IsFiring` `GameplayTag` を持っている間は複製を無効にします。ここでは基本的に自分自身のローカル予測を行っています。
 
 ```c++
 void AGSWeapon::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
@@ -598,18 +599,18 @@ void AGSWeapon::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracke
 }
 ```
 
-Benefits:
-1. Avoids limitations of using `AttributeSets` (see below)
+メリット
+1. `AttributeSets`を使用する際の制限を回避することができる（下記参照）
 
-Limitations:
-1. Can not use existing `GameplayEffect` workflow (`Cost GEs` for ammo use, etc)
-1. Requires work to override key functions on `UGameplayAbility` to check and apply ammo costs against the gun's floats
+デメリット
+1. 既存の`GameplayEffect`のワークフローを使用できない(弾薬を使用するための`Cost GEs`など)
+1. 銃のフロートに対する弾薬のコストをチェックして適用するために、`UGameplayAbility`の主要な関数をオーバーライドする作業が必要。
 
 <a name="concepts-as-design-itemattributes-attributeset"></a>
-###### 4.4.2.3.2 `AttributeSet` on the Item
-Using a separate `AttributeSet` on the item that gets [added to the player's `ASC` on adding it to the player's inventory](#concepts-as-design-addremoveruntime) can work, but it has some major limitations. I had this working in early versions of [GASShooter](https://github.com/dohi/GASShooter) for the weapon ammo. The weapon stores its `Attributes` such as max clip size, current ammo in clip, reserve ammo, etc in an `AttributeSet` that lives on the weapon class. If weapons share reserve ammo, you would move the reserve ammo onto the character in a shared ammo `AttributeSet`. When a weapon is added to the player's inventory on the server, the weapon would add its `AttributeSet` to the player's `ASC::SpawnedAttributes`. The server would then replicate this down to the client. If the weapon is removed from the inventory, it would remove its `AttributeSet` from the `ASC::SpawnedAttributes`.
+##### 4.4.2.3.2 アイテムの`AttributeSet`について
+アイテムに個別の`AttributeSet`を使用すると、[プレイヤーのインベントリに追加する際にプレイヤーの`ASC`に追加される](#concepts-as-design-addremoveruntime)ようになりますが、いくつかの大きな制限があります。私は[GASShooter](https://github.com/dohi/GASShooter)の初期のバージョンで、武器の弾薬にこれを使っていました。武器は、最大クリップサイズ、クリップ内の現在の弾薬、予備弾薬などの`Attribute`を、武器クラスにある`AttributeSet`に格納します。武器が予備弾薬を共有している場合は、予備弾薬を共有弾薬の `AttributeSet` に入れてキャラクターに移動させます。サーバー上でプレイヤーのインベントリに武器が追加されると、その武器はプレイヤーの `ASC::SpawnedAttributes` にその `AttributeSet` を追加します。サーバーはこの情報をクライアントに伝えます。武器がインベントリから削除されると、その武器は `ASC::SpawnedAttributes` から `AttributeSet` を削除します。
 
-When the `AttributeSet` lives on something other than the `OwnerActor` (say a weapon), you'll initially get some compilation errors in the `AttributeSet`. The fix is to construct the `AttributeSet` in `BeginPlay()` instead of in the constructor and to implement `IAbilitySystemInterface` (set the pointer to the `ASC` when you add the weapon to the player inventory) on the weapon.
+`AttributeSet`が`OwnerActor`以外の何か（例えば武器）に常駐している場合、最初は`AttributeSet`にいくつかのコンパイルエラーが発生します。修正方法は、コンストラクタではなく、`BeginPlay()`で`AttributeSet`を構築し、`IAbilitySystemInterface`を武器に実装する（武器をプレイヤーのインベントリに追加するときに`ASC`へのポインタを設定する）ことです。
 
 ```c++
 void AGSWeapon::BeginPlay()
@@ -622,42 +623,42 @@ void AGSWeapon::BeginPlay()
 }
 ```
 
-You can see it in practice by checking out this [older version of GASShooter](https://github.com/dohi/GASShooter/tree/df5949d0dd992bd3d76d4a728f370f2e2c827735).
+この[古いバージョンのGASShooter](https://github.com/dohi/GASShooter/tree/df5949d0dd992bd3d76d4a728f370f2e2c827735)をチェックすることで、実際に見ることができます。
 
-Benefits:
-1. Can use existing `GameplayAbility` and `GameplayEffect` workflow (`Cost GEs` for ammo use, etc)
-1. Simple to setup for a very small set of items
+メリット
+1. 既存の`GameplayAbility`と`GameplayEffect`のワークフローを利用できる（弾薬使用のための`Cost GEs`など）。
+1. 非常に小さなアイテムのためのセットアップが簡単にできる
 
-Limitations:
-1. You have to make a new `AttributeSet` class for every weapon type. `ASCs` can only functionally have one `AttributeSet` instance of a class since changes to an `Attribute` look for the first instance of their `AttributeSet` class in the `ASCs` `SpawnedAttributes` array. Additional instances of the same `AttributeSet` class are ignored.
-1. You can only have one of each type of weapon in the player's inventory due to previous reason of one `AttributeSet` instance per `AttributeSet` class.
-1. Removing an `AttributeSet` is dangerous. In GASShooter if the player killed himself from a rocket, the player would immediately remove the rocket launcher from his inventory (including its `AttributeSet` from the `ASC`). When the server replicated that the rocket launcher's ammo `Attribute` changed, the `AttributeSet` no longer existed on the client's `ASC` and the game crashed.
+デメリット
+1. 武器の種類ごとに新しい `AttributeSet` クラスを作成する必要があります。なぜなら、`Attribute`への変更は、`ASC`の`SpawnedAttributes`配列の中で、その`AttributeSet`クラスの最初のインスタンスを探すからです。同じ `AttributeSet` クラスの追加インスタンスは無視されます。
+1.  プレイヤーのインベントリには、各タイプの武器を1つずつしか入れることができません。これは、以前の理由により、1つの`AttributeSet`クラスにつき1つの`AttributeSet`インスタンスしかないためです。
+1.  `AttributeSet`を削除するのは危険です。古いGASShooterでは、プレイヤーがロケットで自殺した場合、プレイヤーはすぐにロケットランチャーをインベントリから削除しました（その`AttributeSet`を`ASC`からも削除しました）。ロケットランチャーの弾薬の `Attribute` が変更されたことがサーバーにレプリケートされると、`AttributeSet` がクライアントの `ASC` に存在しなくなり、ゲームがクラッシュしました。
 
 <a name="concepts-as-design-itemattributes-asc"></a>
 ###### 4.4.2.3.3 `ASC` on the Item
-Putting a whole `AbilitySystemComponent` on each item is an extreme approach. I have not personally done this nor have I seen it in the wild. It would take a lot of engineering to make it work.
+各アイテムに `AbilitySystemComponent` 全体を配置するのは、極端なアプローチです。私は個人的にこれを行ったことはありませんし、使用されているものを見たこともありません。これを実現するには多くのエンジニアリングが必要になるでしょう。
 
-> Is it viable to have several AbilitySystemComponents which have the same owner but different avatars (e.g. on pawn and weapon/items/projectiles with Owner set to PlayerState)?
+> オーナーが同じでアバターが異なる複数のAbilitySystemComponentを持つことは可能ですか？
 > 
-> The first problem I see there would be implementing the IGameplayTagAssetInterface and IAbilitySystemInterface on the owning actor. The former may be possible: just aggregate the tags from all all ASCs (but watch out -HasAllMatchingGameplayTags may be met only via cross ASC aggregation. It wouldn't be enough to just forward that calls to each ASC and OR the results together). But the later is even trickier: which ASC is the authoritative one? If someone wants to apply a GE -which one should receive it? Maybe you can work these out but this side of the problem will be the hardest: owners will multiple ASCs beneath them.
+> 私が考える最初の問題は、所有するアクターにIGameplayTagAssetInterfaceとIAbilitySystemInterfaceを実装することです。前者は可能かもしれません。すべてのASCからタグを集約すればいいのです（ただし、「HasAllMatchingGameplayTags」はASCをまたいだ集約によってのみ満たされる可能性があるので注意が必要です）。その呼び出しを各ASCに転送して、結果を一緒にORするだけでは十分ではないでしょう）。) しかし、後者はさらに厄介で、どのASCが権威あるものなのか？誰かがGEを適用したいと思ったとき、どのASCがそれを受け取るべきなのか？これらを解決できるかもしれませんが、オーナーが複数のASCを傘下に持つという点では、こちらの問題の方が難しいでしょう。
 > 
-> Separate ASCs on the pawn and the weapon can make sense on its own though. E.g, distinguishing between tags the describe the weapon vs those that describe the owning pawn. Maybe it does make sense that tags granted to the weapon also “apply” to the owner and nothing else (E.g, attributes and GEs are independent but the owner will aggregate the owned tags like I describe above). This could work out, I am sure. But having multiple ASCs with the same owner may get dicey.
+> ポーンと武器のASCを分けることは、それだけで意味があります。例えば、武器を説明するタグと、所有するポーンを説明するタグを区別することができます。武器に付与されたタグは所有者にも「適用」され、それ以外には適用されないというのも意味があるかもしれません（例えば、属性とGEは独立していますが、所有者は上述のように所有しているタグを集約します）。これはうまくいくと思いますよ。しかし、同じオーナーを持つ複数のASCを持つことは、危険なことかもしれません。
 
 *Dave Ratti from Epic's answer to [community questions #6](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)*
 
-Benefits:
-1. Can use existing `GameplayAbility` and `GameplayEffect` workflow (`Cost GEs` for ammo use, etc)
-1. Can reuse `AttributeSet` classes (one on each weapon's ASC)
+メリット
+1. 既存の `GameplayAbility` と `GameplayEffect` のワークフローを使用することができます（弾薬使用のための "Cost GE "など）。
+1. `AttributeSet` クラスを再利用できる(各武器のASCに1つずつ)
 
-Limitations:
-1. Unknown engineering cost
-1. Is it even possible?
+デメリット
+1. 不明なエンジニアリングコスト
+1. それは可能なのか？
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-as-attributes"></a>
-#### 4.4.3 Defining Attributes
-**`Attributes` can only be defined in C++** in the `AttributeSet's` header file. It is recommended to add this block of macros to the top of every `AttributeSet` header file. It will automatically generate getter and setter functions for your `Attributes`.
+#### 4.4.3 属性の定義
+**`Attribute`はC++で、`AttributeSet`のヘッダファイルでのみ定義できます。** すべての`AttributeSet`ヘッダーファイルの先頭に、以下のマクロのブロックを追加することをお勧めします。これにより、`Attribute`のゲッター関数とセッター関数が自動的に生成されます。
 
 ```c++
 // Uses macros from AttributeSet.h
@@ -668,7 +669,7 @@ Limitations:
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 ```
 
-A replicated health attribute would be defined like this:
+レプリケートされるヘルスの属性はこのように定義できます：
 
 ```c++
 UPROPERTY(BlueprintReadOnly, Category = "Health", ReplicatedUsing = OnRep_Health)
@@ -676,13 +677,14 @@ FGameplayAttributeData Health;
 ATTRIBUTE_ACCESSORS(UGDAttributeSetBase, Health)
 ```
 
-Also define the `OnRep` function in the header:
+ヘッダに`OnRep`関数も定義します：
+
 ```c++
 UFUNCTION()
 virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
 ```
 
-The .cpp file for the `AttributeSet` should fill in the `OnRep` function with the `GAMEPLAYATTRIBUTE_REPNOTIFY` macro used by the prediction system:
+`AttributeSet`の.cppファイルは、`OnRep`関数に、予測システムが使用する`GAMEPLAYATTRIBUTE_REPNOTIFY`マクロを記入する必要があります。
 ```c++
 void UGDAttributeSetBase::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
@@ -690,7 +692,7 @@ void UGDAttributeSetBase::OnRep_Health(const FGameplayAttributeData& OldHealth)
 }
 ```
 
-Finally, the `Attribute` needs to be added to `GetLifetimeReplicatedProps`:
+最後に、`GetLifetimeReplicatedProps`に`Attribute`を追加する必要があります。
 ```c++
 void UGDAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -700,36 +702,36 @@ void UGDAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 }
 ```
 
-`REPNOTIFY_Always` tells the `OnRep` function to trigger if the local value is already equal to the value being repped down from the Server (due to prediction). By default it won't trigger the `OnRep` function if the local value is the same as the value being repped down from the Server.
+`REPNOTIFY_Always`は、ローカルの値がサーバーからレプリケートされてきた値とすでに等しい場合に（予測によりそうなる場合に）でも、`OnRep`関数をトリガーするように指示します。デフォルトでは、ローカルの値がサーバーからレプリケートされてきた値と同じであれば、`OnRep`関数はトリガーされません。
 
-If the `Attribute` is not replicated like a `Meta Attribute`, then the `OnRep` and `GetLifetimeReplicatedProps` steps can be skipped.
+もし`Attribute`が`Meta Attribute`のように複製されていなければ、`OnRep`と`GetLifetimeReplicatedProps`のステップは省略することができます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-as-init"></a>
-#### 4.4.4 Initializing Attributes
-There are multiple ways to initialize `Attributes` (set their `BaseValue` and consequently their `CurrentValue` to some initial value). Epic recommends using an instant `GameplayEffect`. This is the method used in the Sample Project too.
+#### 4.4.4 属性の初期化
+アトリビュートを初期化するには、複数の方法があります (アトリビュートの `BaseValue` や `CurrentValue` を初期値に設定する)。Epic では、インスタントの `GameplayEffect` を使用することをお勧めします。これは、サンプル プロジェクトでも使用されている方法です。
 
-See `GE_HeroAttributes` Blueprint in the Sample Project for how to make an instant `GameplayEffect` to initialize `Attributes`. Application of this `GameplayEffect` happens in C++.
+`Attributes`を初期化するためにインスタントの`GameplayEffect`を作成する方法については、サンプルプロジェクトの`GE_HeroAttributes`ブループリントを参照してください。この`GameplayEffect`の適用はC++で行われます。
 
-If you used the `ATTRIBUTE_ACCESSORS` macro when you defined your `Attributes`, an initialization function will automatically be generated on the `AttributeSet` for each `Attribute` that you can call at your leisure in C++.
+`Attribute`を定義する際に`ATTRIBUTE_ACCESSORS`マクロを使用した場合は、各`Attribute`の`AttributeSet`上に初期化関数が自動的に生成されますので、C++で自由に呼び出すことができます。
 
 ```c++
 // InitHealth(float InitialValue) is an automatically generated function for an Attribute 'Health' defined with the `ATTRIBUTE_ACCESSORS` macro
 AttributeSet->InitHealth(100.0f);
 ```
 
-See `AttributeSet.h` for more ways to initialize `Attributes`.
+`Attributes`を初期化するその他の方法については `AttributeSet.h` を参照してください。（訳注：DataTableからのインポート。InitFromMetaDataTable）
 
-**Note:** Prior to 4.24, `FAttributeSetInitterDiscreteLevels` did not work with `FGameplayAttributeData`. It was created when `Attributes` were raw floats and will complain about `FGameplayAttributeData` not being `Plain Old Data` (`POD`). This is fixed in 4.24 https://issues.unrealengine.com/issue/UE-76557.
+**注意:** 4.24より前のバージョンでは、`FAttributeSetInitterDiscreteLevels`は`FGameplayAttributeData`では動作しませんでした。これは `Attributes` が生の浮動小数点であったときに作成されたもので、`FGameplayAttributeData` が `Plain Old Data` (`POD`) ではないことが原因でした。これは4.24 https://issues.unrealengine.com/issue/UE-76557 で修正されています。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-as-preattributechange"></a>
 #### 4.4.5 PreAttributeChange()
-`PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)` is one of the main functions in the `AttributeSet` to respond to changes to an `Attribute's` `CurrentValue` before the change happens. It is the ideal place to clamp incoming changes to `CurrentValue` via the reference parameter `NewValue`.
+`PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)`は`AttributeSet`内の主要な関数の一つで、`Attribute`の`CurrentValue`への変更時に、変更が起こる前に対応するためのものです。この関数は、参照パラメータ `NewValue` を介して `CurrentValue` への変更をクランプするのに理想的な場所です。
 
-For example to clamp movespeed modifiers the Sample Project does it like so:
+例えば、movespeedモディファイアを固定するために、サンプルプロジェクトでは次のようにしています。
 ```c++
 if (Attribute == GetMoveSpeedAttribute())
 {
@@ -737,33 +739,33 @@ if (Attribute == GetMoveSpeedAttribute())
 	NewValue = FMath::Clamp<float>(NewValue, 150, 1000);
 }
 ```
-The `GetMoveSpeedAttribute()` function is created by the macro block that we added to the `AttributeSet.h` ([Defining Attributes](#concepts-as-attributes)).
+`GetMoveSpeedAttribute()`関数は、`AttributeSet.h` ([Defining Attributes](#concepts-as-attributes))に追加したマクロブロックによって作成されます。
 
-This is triggered from any changes to `Attributes`, whether using `Attribute` setters (defined by the macro block in `AttributeSet.h` ([Defining Attributes](#concepts-as-attributes))) or using [`GameplayEffects`](#concepts-ge).
+これは、`Attribute`のセッター(`AttributeSet.h` ([Defining Attributes](#concepts-as-attributes))のマクロブロックで定義されている)を使用しているか、[`GameplayEffects`](#concepts-ge)を使用しているかに関わらず、`Attributes`に変更があった場合にトリガーされます。
 
-**Note:** Any clamping that happens here does not permanently change the modifier on the `ASC`. It only changes the value returned from querying the modifier. This means anything that recalculates the `CurrentValue` from all of the modifiers like [`GameplayEffectExecutionCalculations`](#concepts-ge-ec) and [`ModifierMagnitudeCalculations`](#concepts-ge-mmc) need to implement clamping again.
+**注意:** ここで発生するクランプは、`ASC`のモディファイアを恒久的に変更するものではありません。モディファイアのクエリから返される値を変更するだけです。つまり、[`GameplieEffectExecutionCalculations`](#concepts-ge-ec)や[`ModifierMagnitudeCalculations`](#concepts-ge-mmc)のように、すべてのモディファイアから`CurrentValue`を再計算するものは、クランピングを再度実装する必要があります。
 
-**Note:** Epic's comments for `PreAttributeChange()` say not to use it for gameplay events and instead use it mainly for clamping. The recommended place for gameplay events on `Attribute` change is `UAbilitySystemComponent::GetGameplayAttributeValueChangeDelegate(FGameplayAttribute Attribute)` ([Responding to Attribute Changes](#concepts-a-changes)).
+**注意:** Epicの`PreAttributeChange()`のコメントによると、ゲームプレイイベントには使用せず、主にclampingに使用するとのことです。`UAbilitySystemComponent::GetGamaplayAttributeValueChangeDelegate(FGameplayAttribute Attribute)`（[属性変更への対応](#concepts-a-changes)）が、`Attribute`変更時のゲームプレイイベントに推奨される場所です。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-as-postgameplayeffectexecute"></a>
 #### 4.4.6 PostGameplayEffectExecute()
-`PostGameplayEffectExecute(const FGameplayEffectModCallbackData & Data)` only triggers after changes to the `BaseValue` of an `Attribute` from an instant [`GameplayEffect`](#concepts-ge). This is a valid place to do more `Attribute` manipulation when they change from a `GameplayEffect`.
+`PostGameplayEffectExecute(const FGameplayEffectModCallbackData & Data)`は、インスタントの[`GameplayEffect`](#concepts-ge)から`Attribute`の`BaseValue`が変更された後にのみトリガーされます。これは、`GameplayEffect`から`Attribute`が変化したときに、さらに`Attribute`を操作するための有効な場所です。
 
-For example, in the Sample Project we subtract the final damage `Meta Attribute` from the health `Attribute` here. If there was a shield `Attribute`, we would subtract the damage from it first before subtracting the remainder from health. The Sample Project also uses this location to apply hit react animations, show floating Damage Numbers, and assign experience and gold bounties to the killer. By design, the damage `Meta Attribute` will always come through an instant `GameplayEffect` and never the `Attribute` setter.
+例えば、サンプルプロジェクトでは、ここでヘルスの`属性`から最終的なダメージの`Meta属性`を引いています。もし、シールドの属性があった場合は、まずシールドのダメージを引いてから、残りをヘルスから引きます。サンプルプロジェクトでは、この場所を使って、ヒットリアクションアニメーションを適用したり、フローティングダメージナンバーを表示したり、殺人者に経験値やゴールドバウンティを割り当てたりしています。デザイン上、ダメージの`Meta Attribute`は常にインスタントの`GameplayEffect`を介して行われ、`Attribute`セッターではありません。
 
-Other `Attributes` that will only have their `BaseValue` changed from instant `GameplayEffects` like mana and stamina can also be clamped to their maximum value counterpart `Attributes` here.
+マナやスタミナのように、インスタントの`GameplayEffects`から`BaseValue`が変更されるだけの他の`Attribute`も、ここでその最大値に対応する`Attribute`に固定することができます。
 
-**Note:** When `PostGameplayEffectExecute()` is called, changes to the `Attribute` have already happened, but they have not replicated back to clients yet so clamping values here will not cause two network updates to clients. Clients will only receive the update after clamping.
+**注意:** `PostGameplayEffectExecute()`が呼ばれたとき、`Attribute`への変更はすでに行われていますが、まだクライアントにはレプリケートされていないので、ここで値をクランプしても、クライアントに2回のネットワークアップデートが行われることはありません。クライアントはクランピング後にのみ更新を受け取ります。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-as-onattributeaggregatorcreated"></a>
 #### 4.4.7 OnAttributeAggregatorCreated()
-`OnAttributeAggregatorCreated(const FGameplayAttribute& Attribute, FAggregator* NewAggregator)` triggers when an `Aggregator` is created for an `Attribute` in this set. It allows custom setup of [`FAggregatorEvaluateMetaData`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/FAggregatorEvaluateMetaData/index.html). `AggregatorEvaluateMetaData` is used by the `Aggregator` in evaluating the `CurrentValue` of an `Attribute` based on all the [`Modifiers`](#concepts-ge-mods) applied to it. By default, `AggregatorEvaluateMetaData` is only used by the `Aggregator` to determine which `Modifiers` qualify with the example of `MostNegativeMod_AllPositiveMods` which allows all positive `Modifiers` but restricts negative `Modifiers` to only the most negative one. This was used by Paragon to only allow the most negative move speed slow effect to apply to a player regardless of how many slow effects where on them at any one time while applying all positive move speed buffs. `Modifiers` that don't qualify still exist on the `ASC`, they just aren't aggregated into the final `CurrentValue`. They can potentially qualify later once conditions change, like in the case if the most negative `Modifier` expires, the next most negative `Modifier` (if one exists) then qualifies.
+`OnAttributeAggregatorCreated(const FGameplayAttribute& Attribute, FAggregator* NewAggregator)`は、このセット内の`Attribute`に対して`Aggregator`が作成されたときにトリガーします。これにより、[`AggregatorEvaluateMetaData`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/FAggregatorEvaluateMetaData/index.html)のカスタム設定が可能になります。`AggregatorEvaluateMetaData` は、`Attribute` に適用されたすべての [`Modifiers`](#concepts-ge-mod) に基づいて `CurrentValue` を評価する際に `Aggregator` が使用します。デフォルトでは、`AggregatorEvaluateMetaData`は、`Aggregator`がどの`修飾子`が適格かを判断するためにのみ使用されます。例えば、`MostNegativeMod_AllPositiveMods`は、すべてのポジティブな`修飾子`を許可しますが、ネガティブな`修飾子`は最もネガティブなものだけに制限されます。これはParagonが使用したもので、すべてのポジティブな移動速度バフを適用する一方で、同時にいくつのスロー効果があるかに関わらず、最もネガティブな移動速度スロー効果のみをプレイヤーに適用できるようにしたものです。条件を満たさない`Modifier`は`ASC`上にまだ存在し、最終的な`CurrentValue`に集約されていないだけです。最もマイナスの「修飾子」が期限切れになった場合、次にマイナスの「修飾子」（存在する場合）が適用されるというように、条件が変われば後に適用される可能性があります。
 
-To use AggregatorEvaluateMetaData in the example of only allowing the most negative `Modifier` and all positive `Modifiers`:
+AggregatorEvaluateMetaData を、最も否定的な `Modifier` とすべての肯定的な `Modifier` のみを許可する例で使用するには、以下のようになります。
 
 ```c++
 virtual void OnAttributeAggregatorCreated(const FGameplayAttribute& Attribute, FAggregator* NewAggregator) const override;
@@ -786,7 +788,7 @@ void UGSAttributeSetBase::OnAttributeAggregatorCreated(const FGameplayAttribute&
 }
 ```
 
-Your custom `AggregatorEvaluateMetaData` for qualifiers should be added to `FAggregatorEvaluateMetaDataLibrary` as static variables.
+`AggregatorEvaluateMetaData`に修飾子を追加する場合は、`FAggregatorEvaluateMetaDataLibrary` に静的変数として追加します。
 
 **[⬆ Back to Top](#table-of-contents)**
 
