@@ -2470,10 +2470,10 @@ https://forums.unrealengine.com/development-discussion/c-gameplay-programming/17
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-asg"></a>
-### 4.9 Ability System Globals
-The [`AbilitySystemGlobals`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UAbilitySystemGlobals/index.html) class holds global information about GAS. Most of the variables can be set from the `DefaultGame.ini`. Generally you won't have to interact with this class, but you should be aware of its existence. If you need to subclass things like the [`GameplayCueManager`](#concepts-gc-manager) or the [`GameplayEffectContext`](#concepts-ge-context), you have to do that through the `AbilitySystemGlobals`.
+### 4.9 アビリティシステムグローバル
+[`AbilitySystemGlobals`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UAbilitySystemGlobals/index.html)クラスはGASのグローバルな情報を保持します。ほとんどの変数は`DefaultGame.ini`から設定できます。一般的にはこのクラスを使用する必要はありませんが、その存在を知っておくべきでしょう。[`GameplayCueManager`](#concepts-gc-manager)や[`GameplayEffectContext`](#concepts-ge-context)のようなものをサブクラス化する必要がある場合は、`AbilitySystemGlobals`を使って行います。
 
-To subclass `AbilitySystemGlobals`, set the class name in the `DefaultGame.ini`:
+`AbilitySystemGlobals`をサブクラス化するには、`DefaultGame.ini`でクラス名を設定します。
 ```
 [/Script/GameplayAbilities.AbilitySystemGlobals]
 AbilitySystemGlobalsClassName="/Script/ParagonAssets.PAAbilitySystemGlobals"
@@ -2481,9 +2481,9 @@ AbilitySystemGlobalsClassName="/Script/ParagonAssets.PAAbilitySystemGlobals"
 
 <a name="concepts-asg-initglobaldata"></a>
 #### 4.9.1 InitGlobalData()
-Starting in UE 4.24, it is now necessary to call `UAbilitySystemGlobals::InitGlobalData()` to use [`TargetData`](#concepts-targeting-data), otherwise you will get errors related to `ScriptStructCache` and clients will be disconnected from the server. This function only needs to be called once in a project. Fortnite calls it from the AssetManager class's start initial loading function and Paragon called it from `UEngine::Init()`. I find that putting it in `UEngineSubsystem::Initialize()` is a good place as shown in the Sample Project. I would consider this boilerplate code that you should copy into your project to avoid issues with `TargetData`.
+UE 4.24からは、[`TargetData`](#concepts-targeting-data)を使用するために、`UAbilitySystemGlobals::InitGlobalData()`を呼び出す必要があります。そうしないと、`ScriptStructCache`に関連するエラーが発生し、クライアントがサーバーから切断されます。この関数は、プロジェクト内で一度だけ呼び出す必要があります。FortniteではAssetManagerクラスのstart initial loading関数から、Paragonでは`UEngine::Init()`から呼び出されています。サンプルプロジェクトにあるように、`UEngineSubsystem::Initialize()`の中に入れるのが良いと思います。これは、`TargetData`の問題を回避するためにプロジェクトにコピーすべき定型的なコードと考えています。
 
-If you run into a crash while using the `AbilitySystemGlobals` `GlobalAttributeSetDefaultsTableNames`, you may need to call `UAbilitySystemGlobals::InitGlobalData()` later like Fortnite in the `AssetManager` or in the `GameInstance` instead of in `UEngineSubsystem::Initialize()`. This crash is likely due to the order in which the `Subsystems` are created and the `GlobalAttributeDefaultsTables` requires the `EditorSubsystem` to be loaded to bind a delegate in `UAbilitySystemGlobals::InitGlobalData()`.
+`AbilitySystemGlobals`の`GlobalAttributeSetDefaultsTableNames`を使用中にクラッシュに遭遇した場合、Fortniteのように後から`UEngineSubsystem::Initialize()`ではなく、`AssetManager`や`GameInstance`で`UAbilitySystemGlobals::InitGlobalData()`を呼び出す必要があるかもしれません。このクラッシュは、`Subsystem`の作成順序が原因と考えられ、`GlobalAttributeDefaultsTables`では、`UAbilitySystemGlobals::InitGlobalData()`でデリゲートをバインドするために`EditorSubsystem`をロードする必要があります。
 
 **[⬆ Back to Top](#table-of-contents)**
 
