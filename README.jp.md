@@ -2726,43 +2726,43 @@ void SetReticleMaterialParamVector(FName ParamName, FVector value);
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="cae"></a>
-## 5. Commonly Implemented Abilities and Effects
+## 5. 一般的に実装されるアビリティとエフェクト
 
 <a name="cae-stun"></a>
-### 5.1 Stun
-Typically with stuns, we want to cancel all of a `Character's` active `GameplayAbilities`, prevent new `GameplayAbility` activations, and prevent movement throughout the duration of the stun. The Sample Project's Meteor `GameplayAbility` applies a stun on hit targets.
+### 5.1 スタン
+一般的にスタンは、キャラクターのアクティブな`GameplayAbility`をすべてキャンセルし、新たな`GameplayAbility`の発動を阻止し、スタンの間は移動できないようにします。サンプルプロジェクトのMeteor`GameplayAbility`は、ヒットしたターゲットにスタンを適用します。
 
-To cancel the target's active `GameplayAbilities`, we call `AbilitySystemComponent->CancelAbilities()` when the stun [`GameplayTag` is added](#concepts-gt-change).
+ターゲットのアクティブな`GameplayAbility`をキャンセルするには、スタンの[`GameplayTag`が追加されたときに、`AbilitySystemComponent->CancelAbilities()`を呼び出します(#concepts-gt-change)。
 
-To prevent new `GameplayAbilities` from activating while stunned, the `GameplayAbilities` are given the stun `GameplayTag` in their [`Activation Blocked Tags` `GameplayTagContainer`](#concepts-ga-tags).
+スタン状態で新しい`GameplayAbilities`が発動しないようにするために、`GameplayAbilities`の[`Activation Blocked Tags` `GameplayTagContainer`]にスタンの`GameplayTag`を付与します(#concepts-ga-tags)。
 
-To prevent movement while stunned, we override the `CharacterMovementComponent's` `GetMaxSpeed()` function to return 0 when the owner has the stun `GameplayTag`.
+スタン状態での移動を防ぐために、オーナーがスタン状態の`GameplayTag`を持っているときは0を返すように、`CharacterMovementComponent`の`GetMaxSpeed()`関数をオーバーライドしています。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="cae-sprint"></a>
-### 5.2 Sprint
-The Sample Project provides an example of how to sprint - run faster while `Left Shift` is held down.
+### 5.2 スプリント
+サンプルプロジェクトでは、`左Shift`を押しながら速く走る、スプリントの例を紹介しています。
 
-The faster movement is handled predictively by the `CharacterMovementComponent` by sending a flag over the network to the server. See `GDCharacterMovementComponent.h/cpp` for details.
+より速い動きは、`CharacterMovementComponent`がネットワーク経由でサーバーにフラグを送ることで予測的に処理します。詳細は `GDCharacterMovementComponent.h/cpp` を参照してください。
 
-The `GA` handles responding to the `Left Shift` input, tells the `CMC` to begin and stop sprinting, and to predictively charge stamina while `Left Shift` is pressed. See `GA_Sprint_BP` for details.
+`GA` は `Left Shift` の入力への応答を処理し、`CMC` にスプリントの開始と停止を指示し、`Left Shift` が押されている間は予測的にスタミナをチャージするようにします。詳細は `GA_Sprint_BP` を参照してください。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="cae-ads"></a>
 ### 5.3 Aim Down Sights
-The Sample Project handles this the exact same way as sprinting but decreasing the movement speed instead of increasing it.
+サンプルプロジェクトでは、スプリントと全く同じ方法で処理していますが、移動速度を上げるのではなく、下げるようにしています。
 
-See `GDCharacterMovementComponent.h/cpp` for details on predictively decreasing the movement speed.
+予測的に移動速度を減少させる詳細については `GDCharacterMovementComponent.h/cpp` を参照してください。
 
-See `GA_AimDownSight_BP` for details on handling the input. There is no stamina cost for aiming down sights.
+入力の処理についての詳細は `GA_AimDownSight_BP` を参照してください。ADSをおこなうためのスタミナコストはありません。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="cae-ls"></a>
-### 5.4 Lifesteal
-I handle lifesteal inside of the damage [`ExecutionCalculation`](#concepts-ge-ec). The `GameplayEffect` will have a `GameplayTag` on it like `Effect.CanLifesteal`. The `ExecutionCalculation` checks if the `GameplayEffectSpec` has that `Effect.CanLifesteal` `GameplayTag`. If the `GameplayTag` exists, the `ExecutionCalculation` [creates a dynamic `Instant` `GameplayEffect`](#concepts-ge-dynamic) with the amount of health to give as the modifier and applies it back to the `Source's` `ASC`.
+### 5.4 ライフスティール
+ライフスティールはダメージ[`ExecutionCalculation`](#concepts-ge-ec)の中で扱います。`GameplayEffect`には、`Effect.CanLifesteal`のような`GameplayTag`が付けられます。`ExecutionCalculation`は、`GameplayEffectSpec`がその`Effect.CanLifesteal`のような`GameplayTag`を持っているかどうかをチェックします。もし`GameplayTag`があれば、`ExecutionCalculation`は[与えるべきヘルスの量を修飾子としてダイナミックな`Instant` `GameplayEffect`](#concepts-ge-dynamic)を作成し、それを`Source`の`ASC`に適用します。
 
 ```c++
 if (SpecAssetTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Damage.CanLifesteal"))))
@@ -2786,41 +2786,41 @@ if (SpecAssetTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Damage.C
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="cae-random"></a>
-### 5.5 Generating a Random Number on Client and Server
-Sometimes you need to generate a "random" number inside of a `GameplayAbility` for things like bullet recoil or spread. The client and the server will both want to generate the same random numbers. To do this, we must set the `random seed` to be the same at the time of `GameplayAbility` activation. You will want to set the `random seed` each time you activate the `GameplayAbility` in case the client mispredicts activation and its random number sequence becomes out of synch with the server's.
+### 5.5 クライアントとサーバーでの乱数の生成
+弾丸の反動や広がりなどのために、`GameplayAbility`の中に「乱数」を生成する必要がある場合があります。クライアントとサーバーの両方で、同じ乱数を生成する必要があります。そのためには、`GameplayAbility`の起動時に、`random seed`が同じになるように設定する必要があります。クライアントが起動の予測を誤り、乱数列がサーバーのものと一致しなくなった場合に備えて、`GameplayAbility`を起動するたびに`random seed`を設定するとよいでしょう。
 
 | Seed Setting Method                                                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Use the activation prediction key                                            | The `GameplayAbility` activation prediction key is an int16 guaranteed to be synchronized and available in both the client and server in the `Activation()`. You can set this as the `random seed` on both the client and the server. The downside to this method is that the prediction key always starts at zero each time the game starts and consistently increments the value to use between generating keys. This means each match will have the exact same random number sequence. This may or may not be random enough for your needs. |
-| Send a seed through an event payload when you activate the `GameplayAbility` | Activate your `GameplayAbility` by event and send the randomly generated seed from the client to the server via the replicated event payload. This allows for more randomness but the client could easily hack their game to only send the same seed value every time. Also activating `GameplayAbilities` by event will prevent them from activating from the input bind.                                                                                                                                                                     |
+| Use the activation prediction key                                            | `GameplayAbility`の起動予測キーはint16で、クライアントとサーバーの両方で同期して`Activation()`で利用できることが保証されています。これをクライアントとサーバーの両方で `random seed` として設定することができます。この方法の欠点は、ゲームが開始されるたびに予測キーが常にゼロから始まり、キーを生成する間に使用する値を一貫してインクリメントすることです。つまり、各試合ではまったく同じ乱数列が使用されることになります。これは、必要に応じて十分にランダムであるかどうかに関わらずです。 |
+| Send a seed through an event payload when you activate the `GameplayAbility` | イベントで`GameplayAbility`をアクティブにして、複製されたイベントペイロードを介して、クライアントからサーバーにランダムに生成されたシードを送信します。これにより、より多くのランダム性を得ることができますが、クライアントは簡単にゲームをハックして、毎回同じシード値だけを送信することができます。また、イベントで`GameplayAbility`を起動すると、入力バインドから起動することができなくなります。 |
 
-If your random deviation is small, most players won't notice that the sequence is the same every game and using the activation prediction key as the `random seed` should work for you. If you're doing something more complex that needs to be hacker proof, perhaps using a `Server Initiated` `GameplayAbility` would work better where the server can create the prediction key or generate the `random seed` to send via an event payload.
+ランダムな偏差が小さければ、ほとんどのプレイヤーはゲームごとにシーケンスが同じであることに気づかないでしょうし、アクティベーション用の予測キーを「ランダムシード」として使えばうまくいくはずです。もっと複雑でハッカー対策が必要な場合は、「サーバー起動型」の`GameplayAbility`を使うと、サーバーが予測キーを作成したり、`random seed`を生成してイベントペイロードで送信できるので、より効果的です。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="cae-crit"></a>
-### 5.6 Critical Hits
-I handle critical hits inside of the damage [`ExecutionCalculation`](#concepts-ge-ec). The `GameplayEffect` will have a `GameplayTag` on it like `Effect.CanCrit`. The `ExecutionCalculation` checks if the `GameplayEffectSpec` has that `Effect.CanCrit` `GameplayTag`. If the `GameplayTag` exists, the `ExecutionCalculation` generates a random number corresponding to the critical hit chance (`Attribute` captured from the `Source`) and adds the critical hit damage (also an `Attribute` captured from the `Source`) if it succeeded. Since I don't predict damage, I don't have to worry about synchronizing the random number generators on the client and server since the `ExecutionCalculation` will only run on the server. If you tried to do this predictively using an `MMC` to do your damage calculation, you would have to get a reference to the `random seed` from the `GameplayEffectSpec->GameplayEffectContext->GameplayAbilityInstance`.
+### 5.6 クリティカルヒット
+クリティカルヒットはダメージ [`ExecutionCalculation`](#concepts-ge-ec)の中で扱います。`GameplayEffect`には、`Effect.CanCrit`のような`GameplayTag`が付けられています。`ExecutionCalculation`は、`GameplayEffectSpec`がその`Effect.CanCrit`の`GameplayTag`を持っているかどうかをチェックします。もし`GameplayTag`があれば、`ExecutionCalculation`はクリティカルヒットのチャンス（`Source`から取得した`Attribute`）に対応する乱数を生成し、成功した場合はクリティカルヒットのダメージ（同じく`Source`から取得した`Attribute`）を追加します。ダメージを予測しないので、`ExecutionCalculation`はサーバー上でのみ実行されるため、クライアントとサーバーの乱数生成器の同期を気にする必要はありません。もし、`MMC`を使ってダメージの予測計算を行おうとすると、`GameplayEffectSpec->GamplayEffectContext->GameplayAbilityInstance`から`乱数シード`への参照を取得しなければなりません。
 
-See how [GASShooter](https://github.com/dohi/GASShooter) does headshots. It's the same concept except that it does not rely on a random number for chance and instead checks the `FHitResult` bone name.
+[GASShooter](https://github.com/dohi/GASShooter)がヘッドショットを行う方法を見てみましょう。偶然の乱数に頼らず、`FHitResult` のボーン名をチェックすること以外は、同じコンセプトです。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="cae-nonstackingge"></a>
-### 5.7 Non-Stacking Gameplay Effects but Only the Greatest Magnitude Actually Affects the Target
-Slow effects in Paragon did not stack. Each slow instance applied and kept track of their lifetimes as normal, but only the greatest magnitude slow effect actually affected the `Character`. GAS provides for this scenario out of the box with `AggregatorEvaluateMetaData`. See [`AggregatorEvaluateMetaData()`](#concepts-as-onattributeaggregatorcreated) for details and implementation.
+### 5.7 スタックしないゲームプレイ効果だが、最大のものだけが対象に影響を与える
+Paragon のスロー効果はスタックしませんでした。それぞれのスローインスタンスは通常通りに適用され、寿命を記録しますが、最も大きなスロー効果だけが実際に`キャラクター`に影響を与えます。GASはこのシナリオを`AggregatorEvaluateMetaData`ですぐに提供しています。詳細と実装については、[`AggregatorEvaluateMetaData()`](#concepts-as-onattributeaggregatorcreated)を参照してください。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="cae-paused"></a>
-### 5.8 Generate Target Data While Game is Paused
-If you need to pause the game while waiting to generate [`TargetData`](#concepts-targeting-data) from a `WaitTargetData` `AbilityTask` from your player, I suggest instead of pausing to use `slomo 0`.
+### 5.8 ゲームを一時停止してターゲットデータを生成する
+プレイヤーからの `WaitTargetData` `AbilityTask` から [`TargetData`](#concepts-targeting-data) の生成を待つ間、ゲームを一時停止する必要がある場合、一時停止の代わりに `slomo 0` を使用することをお勧めします。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="cae-onebuttoninteractionsystem"></a>
-### 5.9 One Button Interaction System
-[GASShooter](https://github.com/dohi/GASShooter) implements a one button interaction system where the player can press or hold 'E' to interact with interactable objects like reviving a player, opening a weapon chest, and opening or closing a sliding door.
+### 5.9 ワンボタンインタラクションシステム
+[GASShooter](https://github.com/dohi/GASShooter)では、ワンボタンインタラクションシステムを実装しています。プレイヤーは「E」を押し続けることで、プレイヤーの復活、武器箱の開放、スライドドアの開閉などのインタラクション可能なオブジェクトと対話することができます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
