@@ -2921,31 +2921,31 @@ GAS関連のログカテゴリです：
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="optimizations"></a>
-## 7. Optimizations
+## 7. 最適化
 
 <a name="optimizations-abilitybatching"></a>
-### 7.1 Ability Batching
-[`GameplayAbilities`](#concepts-ga) that activate, optionally send `TargetData` to the server, and end all in one frame can be [batched to condense two-three RPCs into one RPC](#concepts-ga-batching). These types of abilities are commonly used for hitscan guns.
+### 7.1 アビリティのバッチ処理
+起動し、任意でサーバーに`TargetData`を送信し、1フレームで終了する[`GameplayAbilities`](#concepts-ga)は、[2, 3のRPCを1つのRPCにバッチ](#concepts-ga-batching)することができます。このタイプのアビリティはヒットスキャンガンによく使われます。
 
 <a name="optimizations-gameplaycuebatching"></a>
-### 7.2 Gameplay Cue Batching
-If you're sending many [`GameplayCues`](#concepts-gc) at the same time, consider [batching them into one RPC](#concepts-gc-batching). The goal is to reduce the number of RPCs (`GameplayCues` are unreliable NetMulticasts) and send as little data as possible.
+### 7.2 ゲームプレイキューのバッチ処理
+多数の[`GameplayCues`](#concepts-gc)を同時に送信する場合は、[1つのRPCにまとめて送信する](#concepts-gc-batching)ことを検討してください。目的はRPCの数を減らし(`GameplayCues`は信頼性の低いNetMulticast)、できるだけ少ないデータを送信することです。
 
 <a name="optimizations-ascreplicationmode"></a>
-### 7.3 AbilitySystemComponent Replication Mode
-By default, the [`ASC`](#concepts-asc) is in [`Full Replication Mode`](#concepts-asc-rm). This will replicate all [`GameplayEffects`](#concepts-ge) to every client (which is fine for a single player game). In a multiplayer game, set the player owned `ASCs` to `Mixed Replication Mode` and AI controlled characters to `Minimal Replication Mode`. This will replicate `GEs` applied on a player character to only replicate to the owner of that character and `GEs` applied on AI controlled characters will never replicate `GEs` to clients. [`GameplayTags`](#concepts-gt) will still replicate and [`GameplayCues`](#concepts-gc) will still unreliable NetMulticast to all clients, regardless of the `Replication Mode`. This will cut down on network data from `GEs` being replicated when all clients don't need to see them.
+### 7.3 AbilitySystemComponentのレプリケーションモード
+デフォルトでは、[`ASC`](#concepts-asc)は[`Full Replication Mode`](#concepts-asc-rm)になっています。これにより、すべての[`GameplayEffects`](#concepts-ge)がすべてのクライアントに複製されます(1人用のゲームではこれで問題ありません)。マルチプレイヤーゲームでは、プレイヤーが所有する`ASC`を`Mixed Replication Mode`に設定し、AIがコントロールするキャラクターを`Minimal Replication Mode`に設定します。これにより、プレイヤーキャラクターに適用された`GEs`は、そのキャラクターの所有者にのみ複製され、AIがコントロールするキャラクターに適用された`GEs`は、クライアントには決して`GEs`を複製しません。[`GameplayTags`](#concepts-gt)は複製され、[`GameplayCues`](#concepts-gc)は「複製モード」に関わらず、すべてのクライアントに対して信頼性の低いNetMulticastを行います。これにより、すべてのクライアントが見る必要のない`GEs`からのネットワークデータが複製されるのを防ぐことができます。
 
 <a name="optimizations-attributeproxyreplication"></a>
-### 7.4 Attribute Proxy Replication
-In large games with many players like Fortnite Battle Royale (FNBR), there will be a lot of [`ASCs`](#concepts-asc) living on always-relevant `PlayerStates` replicating a lot of [`Attributes`](#concepts-a). To optimize this bottleneck, Fortnite disables the `ASC` and its [`AttributeSets`](#concepts-as) from replicating altogether on **simulated player-controlled proxies** in the `PlayerState::ReplicateSubobjects()`. Autonomous proxies and AI controlled `Pawns` still fully replicate according to their [`Replication Mode`](#concepts-asc-rm). Instead of replicating `Attributes` on the `ASC` on the always-relevant `PlayerStates`, FNBR uses a replicated proxy structure on the player's `Pawn`. When `Attributes` change on the server's `ASC`, they are changed on the proxy struct too. The client receives the replicated `Attributes` from the proxy struct and pushes the changes back into its local `ASC`. This allows `Attribute` replication to use the `Pawn`'s relevancy and `NetUpdateFrequency`. This proxy struct also replicates a small white-listed set of `GameplayTags` in a bitmask. This optimization reduces the amount of data over the network and allows us to take advantage of pawn relevancy. AI controlled `Pawns` have their `ASC` on the `Pawn` which already uses its relevancy so this optimization is not needed for them.
+### 7.4 属性プロキシのレプリケーション
+フォートナイト バトルロイヤル(FNBR)のような多くのプレイヤーが参加する大規模なゲームでは、多くの[`ASC`](#concepts-asc)が常に関連性のある`PlayerStates`上に存在し、多くの[`Attributes`](#concepts-a)を複製しています。このボトルネックを最適化するために、フォートナイトでは、`PlayerState::ReplicateSubobjects()`で、`ASC`とその[`AttributeSets`](#concepts-as)が**シミュレートされたプレイヤーが制御するプロキシ**上で完全に複製されることを無効にしています。自律的なプロキシとAIが制御する`Pawns`は、その[`Replication Mode`](#concepts-asc-rm)に従って完全に複製されます。FNBRでは、常に関連性のある`PlayerStates`上の`ASC`上の`Attributes`を複製する代わりに、プレイヤーの`Pawn`上の複製されたプロキシ構造を使用します。サーバーの `ASC` で `Attributes` が変更されると、プロキシ構造体でも変更されます。クライアントはプロキシ構造体から複製された `Attribute` を受け取り、その変更を自分のローカルな `ASC` にプッシュして戻します。これにより、`Pawn`の関連性と`NetUpdateFrequency`を使用して`Attribute`のレプリケーションを行うことができます。また、このプロキシ構造体は、ホワイトリストに登録された小さな`GameplayTags`のセットをビットマスクで複製します。この最適化により、ネットワーク上のデータ量が減り、ポーンの関連性を利用できるようになります。AIが制御する`Pawn`は、その`ASC`が`Pawn`に設定されていて、すでに関連性を利用しているので、この最適化はポーンには必要ありません。
 
-> I’m not sure if it is still necessary with other server side optimizations that have been done since then (Replication Graph, etc) and it is not the most maintainable pattern.
+> その後行われた他のサーバーサイドの最適化(Replication Graphなど)でもこの最適化が必要かどうかはわかりませんし、最もメンテナンス性の高いパターンでもありません。
 
 *Dave Ratti from Epic's answer to [community questions #3](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)*
 
 <a name="optimizations-asclazyloading"></a>
-### 7.5 ASC Lazy Loading
-Fortnite Battle Royale (FNBR) has a lot of damageable `AActors` (trees, buildings, etc) in the world, each with an [`ASC`](#concepts-asc). This can add up in memory cost. FNBR optimizes this by lazily loading `ASCs` only when they're needed (when they first take damage by a player). This reduces overall memory usage since some `AActors` may never be damaged in a match.
+### 7.5 ASC 遅延ローディング
+フォートナイト バトルロイヤル(FNBR)では、ダメージを与えることのできる`AActor`(木や建物など)が世界に多数存在し、それぞれに[`ASC`](#concepts-asc)が設定されています。これはメモリコストの増加につながります。FNBRでは、必要な時（プレイヤーから最初にダメージを受けた時）にのみ、`ASC`を遅延的にロードすることで、これを最適化しています。これにより、いくつかの `AActors` は試合中にダメージを受けることがないので、全体のメモリ使用量を減らすことができます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
