@@ -2825,16 +2825,17 @@ Paragon のスロー効果はスタックしませんでした。それぞれの
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="debugging"></a>
-## 6. Debugging GAS
-Often when debugging GAS related issues, you want to know things like:
-> * "What are the values of my attributes?"
-> * "What gameplay tags do I have?"
-> * "What gameplay effects do I currently have?"
-> * "What abilities do I have granted, which ones are running, and which ones are blocked from activating?".
+## 6. GASのデバッグ
+GAS関連の問題をデバッグする際、以下のようなことを知りたいと思うことがよくあります。
 
-GAS comes with two techniques for answering these questions at runtime - [`showdebug abilitysystem`](#debugging-sd) and hooks in the [`GameplayDebugger`](#debugging-gd).
+> * "自分の属性の値は何か？"
+> * "どんなゲームプレイタグを持っているか？"
+> * "私が現在持っているゲームプレイの効果は？"
+> * "自分にはどんなアビリティが付与されていて、どのアビリティが発動していて、どのアビリティが発動をブロックされているのか？
 
-**Tip:** UE4 likes to optimize C++ code which makes it hard to debug some functions. You will encounter this rarely when tracing deep into your code. If setting your Visual Studio solution configuration to `DebugGame Editor` still prevents tracing code or inspecting variables, you can disable all optimizations by wrapping the optimized function with the `PRAGMA_DISABLE_OPTIMIZATION_ACTUAL` and `PRAGMA_ENABLE_OPTIMIZATION_ACTUAL` macros. This cannot be used on the plugin code unless you rebuild the plugin from source. This may or may not work on inline functions depending on what they do and where they are. Be sure to remove the macros when you're done debugging!
+GASには、これらの質問にランタイムで答えるための2つのテクニックが用意されています - [`showdebug abilitysystem`](#debugging-sd)と、[`GameplayDebugger`](#debugging-gd)のフックです。
+
+**ヒント：** UE4 は C++ コードの最適化を好むため、いくつかの関数のデバッグが困難になります。この問題は、コードを深くトレースしたときにまれに発生します。Visual Studio のソリューション構成を `DebugGame Editor` に設定してもコードのトレースや変数の検査ができない場合は、最適化された関数を `PRAGMA_DISABLE_OPTIMIZATION_ACTUAL` および `PRAGMA_ENABLE_OPTIMIZATION_ACTUAL` マクロでラップすることで、すべての最適化を無効にすることができます。これは、プラグインをソースから再構築しない限り、プラグインのコードには使用できません。インライン関数が何をしているのか、どこにあるのかによって、これが機能する場合としない場合があります。デバッグが終わったら、必ずこのマクロを削除してください。
 
 ```c++
 PRAGMA_DISABLE_OPTIMIZATION_ACTUAL
@@ -2849,59 +2850,59 @@ PRAGMA_ENABLE_OPTIMIZATION_ACTUAL
 
 <a name="debugging-sd"></a>
 ### 6.1 showdebug abilitysystem
-Type `showdebug abilitysystem` in the in-game console. This feature is split into three "pages". All three pages will show the `GameplayTags` that you currently have. Type `AbilitySystem.Debug.NextCategory` into the console to cycle between the pages.
+ゲーム内のコンソールで `showdebug abilitysystem` と入力してください。この機能は3つの「ページ」に分かれています。この機能は3つの「ページ」に分かれており、3つのページには現在持っている「ゲームプレイタグ」が表示されます。コンソールで `AbilitySystem.Debug.NextCategory` と入力すると、ページが切り替わります。
 
-The first page shows the `CurrentValue` of all of your `Attributes`:
-![First Page of showdebug abilitysystem](https://github.com/dohi/GASDocumentation/raw/master/Images/showdebugpage1.png)
+最初のページには、すべての「属性」の「現在の値」が表示されます。
+![showdebug abilitysystemの最初のページ](https://github.com/dohi/GASDocumentation/raw/master/Images/showdebugpage1.png)
 
-The second page shows all of the `Duration` and `Infinite` `GameplayEffects` on you, their number of stacks, what `GameplayTags` they give, and what `Modifiers` they give.
-![Second Page of showdebug abilitysystem](https://github.com/dohi/GASDocumentation/raw/master/Images/showdebugpage2.png)
+2枚目のページには、あなたにかかっているすべての `Duration` と `Infinite` の `GameplayEffects` が表示され、それらのスタック数、どの `GameplayTags` を与えるか、どの `Modifiers` を与えるかが表示されます。
+![showdebug abilitysystemの2ページ目](https://github.com/dohi/GASDocumentation/raw/master/Images/showdebugpage2.png)
 
-The third page shows all of the `GameplayAbilities` that have been granted to you, whether they are currently running, whether they are blocked from activating, and the status of currently running `AbilityTasks`.
-![Third Page of showdebug abilitysystem](https://github.com/dohi/GASDocumentation/raw/master/Images/showdebugpage3.png)
+3枚目のページには、あなたに与えられたすべての`GameplayAbility`が、現在実行されているかどうか、発動がブロックされているかどうか、現在実行されている`AbilityTask`の状態が表示されます。
+![showdebug abilitysystemの3ページ目](https://github.com/dohi/GASDocumentation/raw/master/Images/showdebugpage3.png)
 
-While you can cycle between targets with `PageUp` and `PageDown`, the pages will only show data for the `ASC` on your locally controlled `Character`. However, using `AbilitySystem.Debug.NextTarget` and `AbilitySystem.Debug.PrevTarget` will show data for other `ASCs`, but it will not update the top half of the debug information nor will it update the green targeting rectangular prism so there is no way to know which `ASC` is currently being targeted. This bug has been reported https://issues.unrealengine.com/issue/UE-90437.
+`Page Up`や`Page Down`を使ってターゲットを切り替えることができますが、ページに表示されるのは、ローカルで操作している `Character`の`ASC`のデータだけです。しかし、`AbilitySystem.Debug.NextTarget` と `AbilitySystem.Debug.PrevTarget` を使用すると、他の `ASC` のデータが表示されますが、デバッグ情報の上半分は更新されず、緑色のターゲット用長方形プリズムも更新されないため、どの `ASC` が現在ターゲットされているかを知る方法がありません。このバグは https://issues.unrealengine.com/issue/UE-90437 で報告されています。
 
-**Note:** For `showdebug abilitysystem` to work an actual HUD class must be selected in the GameMode. Otherwise the command is not found and "Unknown Command" is returned.
+**注意：** 「showdebug abilitysystem」が動作するためには、GameModeで実際のHUDクラスが選択されていなければなりません。そうでない場合は、コマンドが見つからず、"Unknown Command "が返されます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="debugging-gd"></a>
-### 6.2 Gameplay Debugger
-GAS adds functionality to the Gameplay Debugger. Access the Gameplay Debugger with the Apostrophe (') key. Enable the Abilities category by pressing 3 on your numpad. The category may be different depending on what plugins you have. If your keyboard doesn't have a numpad like a laptop, then you can change the keybindings in the project settings.
+### 6.2 ゲームプレイデバッガ
+GAS はゲームプレイデバッガーに機能を追加します。アポストロフィ(')キーでゲームプレイデバッガーにアクセスします。テンキーの 3 を押して Abilities カテゴリを有効にします。プラグインの種類によってカテゴリが異なる場合があります。ノートパソコンのようにキーボードにテンキーが付いていない場合は、プロジェクト設定でキーバインドを変更します。
 
-Use the Gameplay Debugger when you want to see the `GameplayTags`, `GameplayEffects`, and `GameplayAbilities` on **other** `Characters`. Unfortunately it does not show the `CurrentValue` of the target's `Attributes`. It will target whatever `Character` is in the center of your screen. You can change targets by selecting them in the World Outliner in the Editor or by looking at a different `Character` and press Apostrophe (') again. The currently inspected `Character` has the largest red circle above it.
+**他の**`キャラクター`の`GameplayTags`、`GameplayEffects`、`GameplayAbilities`を確認したい場合は、ゲームプレイデバッガを使用してください。残念ながら、ターゲットの `Attributes` の `CurrentValue` は表示されません。画面の中央にいる`キャラクター`がターゲットになります。ターゲットを変更するには、エディタのワールドアウトライナーでターゲットを選択するか、別の `Character` を見て、もう一度アポストロフィー (') を押します。現在検査している`Character`は、その上に一番大きな赤い丸があります。
 
-![Gameplay Debugger](https://github.com/dohi/GASDocumentation/raw/master/Images/gameplaydebugger.png)
+![ゲームプレイデバッガー](https://github.com/dohi/GASDocumentation/raw/master/Images/gameplaydebugger.png)
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="debugging-log"></a>
-### 6.3 GAS Logging
-The GAS source code contains a lot of logging statements produced at varying verbosity levels. You will most likely see these as `ABILITY_LOG()` statements. The default verbosity level is `Display`. Anything higher will not be displayed in the console by default.
+### 6.3 GAS のロギング
+GAS のソースコードには、様々な冗長性レベルで作成された多くのロギング文が含まれています。これらはほとんどの場合、 `ABILITY_LOG()` 文として目にすることになるでしょう。デフォルトの冗長度レベルは `Display` です。これより高いレベルのものはデフォルトではコンソールに表示されません。
 
-To change the verbosity level of a log category, type into your console:
+ログカテゴリの冗長度レベルを変更するには、コンソールに次のように入力します。
 
 ```
 log [category] [verbosity]
 ```
 
-For example, to turn on `ABILITY_LOG()` statements, you would type into your console:
+例えば、`ABILITY_LOG()`のステートメントをオンにするには、コンソールに次のように入力します。
 ```
 log LogAbilitySystem VeryVerbose
 ```
 
-To reset it back to default, type:
+デフォルトに戻すには、次のように入力します。
 ```
 log LogAbilitySystem Display
 ```
 
-To display all log categories, type:
+すべてのログカテゴリーを表示するには、次のように入力します。
 ```
 log list
 ```
 
-Notable GAS related logging categories:
+GAS関連のログカテゴリです：
 
 | Logging Category          | Default Verbosity Level |
 | ------------------------- | ----------------------- |
@@ -2915,7 +2916,7 @@ Notable GAS related logging categories:
 | LogGameplayTasks          | Log                     |
 | VLogAbilitySystem         | Display                 |
 
-See the [Wiki on Logging](https://www.ue4community.wiki/Legacy/Logs,_Printing_Messages_To_Yourself_During_Runtime) for more information.
+詳しくは[Wiki on Logging](https://www.ue4community.wiki/Legacy/Logs,_Printing_Messages_To_Yourself_During_Runtime)をご覧ください。
 
 **[⬆ Back to Top](#table-of-contents)**
 
