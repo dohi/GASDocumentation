@@ -2950,54 +2950,54 @@ GAS関連のログカテゴリです：
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="qol"></a>
-## 8. Quality of Life Suggestions
+## 8. QOLに関する提案
 
 <a name="qol-gameplayeffectcontainers"></a>
-### 8.1 Gameplay Effect Containers
-[GameplayEffectContainers](#concepts-ge-containers) combine [`GameplayEffectSpecs`](#concepts-ge-spec), [`TargetData`](#concepts-targeting-data), [simple targeting](#concepts-targeting-containers), and related functionality into easy to use structures. These are great for transfering `GameplayEffectSpecs` to projectiles spawned from an ability that will then apply them on collision at a later time.
+### 8.1 ゲームプレイ効果コンテナ
+[GameplayEffectContainers](#concepts-ge-containers)は、[`GameplayEffectSpecs`](#concepts-ge-spec)、[`TargetData`](#concepts-targeting-data)、[simple targeting](#concepts-targeting-containers)などの関連機能を、使いやすい構造にまとめたものです。これらは、アビリティから生成されたプロジェクタイルに`GameplayEffectSpecs`を転送し、後でコリジョンに適用するのに最適です。
 
 <a name="qol-asynctasksascdelegates"></a>
-### 8.2 Blueprint AsyncTasks to Bind to ASC Delegates
-To increase designer-friendly iteration times, especially when designing UMG Widgets for UI, create Blueprint AsyncTasks (in C++) to bind to the common change delegates on the `ASC` directly from your UMG Blueprint graphs. The only caveat is that they must be manually destroyed (like when the widget is destroyed) otherwise they will live in memory forever. The Sample Project includes three Blueprint AsyncTasks.
+### 8.2 ASC DelegatesにバインドするBlueprint AsyncTasks
+設計者にとって使いやすいイテレーション時間を増やすために、特に UI 用の UMG ウィジェットを設計する際には、（C++ で）ブループリントの AsyncTasks を作成して、UMG ブループリント グラフから直接 `ASC` 上の共通の変更デリゲートにバインドします。唯一の注意点は、（ウィジェットが破棄されたときのように）手動で破棄しなければ、永遠にメモリ内に存在することです。サンプルプロジェクトには、3つのブループリントのAsyncTaskが含まれています。
 
-Listen for `Attribute` changes:
+`Attribute` の変更をリッスンします。
 
 ![Listen for Attributes Changes BP Node](https://github.com/dohi/GASDocumentation/raw/master/Images/attributeschange.png)
 
-Listen for cooldown changes:
+クールダウンの変更をリッスンします。
 
 ![Listen for Cooldown Change BP Node](https://github.com/dohi/GASDocumentation/raw/master/Images/cooldownchange.png)
 
-Listen for `GE` stack changes:
+`GE` スタックの変更をリッスンします。
 
 ![Listen for GameplayEffect Stack Change BP Node](https://github.com/dohi/GASDocumentation/raw/master/Images/gestackchange.png)
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="troubleshooting"></a>
-## 9. Troubleshooting
+## 9. トラブルシューティング
 
 <a name="troubleshooting-notlocal"></a>
 ### 9.1 `LogAbilitySystem: Warning: Can't activate LocalOnly or LocalPredicted ability %s when not local!`
-You need to [initialize the `ASC` on the client](#concepts-asc-setup).
+クライアントの`ASC`を初期化]する必要があります(#concepts-asc-setup)。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="troubleshooting-scriptstructcache"></a>
 ### 9.2 `ScriptStructCache` errors
-You need to call [`UAbilitySystemGlobals::InitGlobalData()`](#concepts-asg-initglobaldata).
+[`UAbilitySystemGlobals::InitGlobalData()`](#concepts-asg-initglobaldata)を呼び出す必要があります。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="troubleshooting-replicatinganimmontages"></a>
-### 9.3 Animation Montages are not replicating to clients
-Make sure that you're using the `PlayMontageAndWait` Blueprint node instead of `PlayMontage` in your [GameplayAbilities](#concepts-ga). This [AbilityTask](#concepts-at) replicates the montage through the `ASC` automatically whereas the `PlayMontage` node does not.
+### 9.3 アニメーションモンタージュがクライアントに複製されない
+[GameplayAbilities](#concepts-ga)の中で、`PlayMontage`ではなく、`PlayMontageAndWait`ブループリントノードを使用していることを確認してください。この[AbilityTask](#concepts-at)は、`PlayMontage`ノードではなく、`ASC`を通してモンタージュを自動的に複製します。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="troubleshooting-duplicatingblueprintactors"></a>
-### 9.4 Duplicating Blueprint Actors is setting AttributeSets to nullptr
-There is a [bug in Unreal Engine](https://issues.unrealengine.com/issue/UE-81109) that will set `AttributeSet` pointers on your classes to nullptr for Blueprint Actor classes that are duplicated from existing Blueprint Actor classes. There are a few workarounds for this. I've had success not creating bespoke `AttributeSet` pointers on my classes (no pointer in the .h, not calling `CreateDefaultSubobject` in the constructor) and instead just directly adding `AttributeSets` to the `ASC` in `PostInitializeComponents()` (not shown in the Sample Project). The replicated `AttributeSets` will still live in the `ASC's` `SpawnedAttributes` array. It would look something like this:
+### 9.4 ブループリント アクターの複製で AttributeSets が nullptr に設定される
+[アンリアル・エンジンのバグ](https://issues.unrealengine.com/issue/UE-81109)により、既存のブループリントアクタークラスから複製されたブループリントアクタークラスのクラス上の `AttributeSet` ポインタが nullptr に設定されることがあります。この問題にはいくつかの回避策があります。私は、クラスに特注の `AttributeSet` ポインタを作成せず (.h にポインタがなく、コンストラクタで `CreateDefaultSubobject` を呼び出さない)、代わりに `PostInitializeComponents()` で `ASC` に `AttributeSets` を直接追加することに成功しました (サンプル プロジェクトでは示されていません)。複製された`AttributeSets`は、`ASC`の`SpawnedAttributes`配列の中に残ります。これは次のようになります。
 
 ```c++
 void AGDPlayerState::PostInitializeComponents()
@@ -3012,7 +3012,7 @@ void AGDPlayerState::PostInitializeComponents()
 }
 ```
 
-In this scenario, you would read and set the values in the `AttributeSet` using the functions on the `ASC` instead of [calling functions on the `AttributeSet` made from the macros](#concepts-as-attributes).
+このシナリオでは、[マクロから作られた`AttributeSet`上の関数を呼び出す](#concepts-as-attributes)ではなく、`ASC`上の関数を使って`AttributeSet`の値を読み込んだり設定したりします。
 
 ```c++
 /** Returns current (final) value of an attribute */
@@ -3022,8 +3022,7 @@ float GetNumericAttribute(const FGameplayAttribute &Attribute) const;
 void SetNumericAttributeBase(const FGameplayAttribute &Attribute, float NewBaseValue);
 ```
 
-So the `GetHealth()` would look something like:
-
+そのため、`GetHealth()`は次のようになります。
 ```c++
 float AGDPlayerState::GetHealth() const
 {
@@ -3036,7 +3035,7 @@ float AGDPlayerState::GetHealth() const
 }
 ```
 
-Setting (initializing) the health `Attribute` would look something like:
+ヘルスの `Attribute` を設定（初期化）するには、次のようにします。
 
 ```c++
 const float NewHealth = 100.0f;
@@ -3046,12 +3045,12 @@ if (AbilitySystemComponent)
 }
 ```
 
-As a reminder, the `ASC` only ever expects at most one `AttributeSet` object per `AttributeSet` class.
+覚えておいていただきたいのですが、`ASC`では、`AttributeSet`クラスごとに最大1つの`AttributeSet`オブジェクトしか想定していません。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="acronyms"></a>
-## 10. Common GAS Acronyms
+## 10. GASの一般的な頭字語
 
 | Name                                                                                                   | Acronyms            |
 |------------------------------------------------------------------------------------------------------- | ------------------- |
@@ -3070,7 +3069,7 @@ As a reminder, the `ASC` only ever expects at most one `AttributeSet` object per
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="resources"></a>
-## 11. Other Resources
+## 11. その他の資料
 * [Official Documentation](https://docs.unrealengine.com/en-US/Gameplay/GameplayAbilitySystem/index.html)
 * Source Code!
    * Especially `GameplayPrediction.h`
@@ -3081,223 +3080,202 @@ As a reminder, the `ASC` only ever expects at most one `AttributeSet` object per
 * [YouTube Videos by SabreDartStudios](https://www.youtube.com/channel/UCCFUhQ6xQyjXDZ_d6X_H_-A)
 
 <a name="resources-daveratti"></a>
-### 11.1 Q&A With Epic Game's Dave Ratti
+### 11.1 Epic Game's Dave RattiによるQ&A
 
 <a name="resources-daveratti-community1"></a>
 #### 11.1.1 Community Questions 1
-[Dave Ratti responses to the Unreal Slackers Discord Server community questions about GAS](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89):
+[GASに関するUnreal Slackers Discord Serverコミュニティの質問に対するDave Ratti氏の回答](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)をご覧ください。
 
-1. How can we create scoped prediction windows on demand outside or irrespective of GameplayAbilities? For example, how can a fire and forget projectile locally predict a damage GameplayEffectwhen it hits an enemy?
+1. GameplayAbilitiesに関係なく、必要に応じてスコープ付きの予測ウィンドウを作成するにはどうすればよいでしょうか？例えば、発射された弾が敵に当たったときのダメージGameplayEffectを局所的に予測するにはどうすればよいでしょうか？
 
-> The PredictionKey system is not really meant to do this. Fundamentally this systems works by a client initiating a predictive action, telling the server about it with a key, and then both client and server running the same thing and associating predictive side effects with the given prediction key. For example, “I am predictively activating an ability” or “I have produced target data and am going to predictively run the part of the ability graph after the WaitTargetData task”.
+> PredictionKeyシステムは、このようなことをするためのものではありません。基本的にこのシステムは、クライアントが予測アクションを開始し、それをサーバーにキーで伝え、クライアントとサーバーの両方が同じことを実行して、与えられた予測キーに予測サイドエフェクトを関連付けることで機能します。例えば、「能力を予測的に起動しています」とか、「ターゲットデータを作成したので、WaitTargetDataタスクの後の能力グラフの部分を予測的に実行しようとしています」とか。
 >
-> With this pattern, the PredictionKey “bounces” off the server and comes back to the client via UAbilitySystemComponent::ReplicatedPredictionKeyMap (replicated property). Once the key is replicated back from the server, the client is able to undo all of the locally predictive side effects (GameplayCues, GameplayEffects): the replicated versions *will be there* and if they aren’t then it was a misprediction. Knowing exactly when to undo the predictive side effects is crucial here: if you are too early you will see gaps, if you are too late you will have “double”. (Note this is referring to stateful prediction, like a looping GameplayCue of a duration based Gameplay Effect. “Burst” GameplayCues and instant Gameplay Effects are never “undone” or rolled back. They are just skipped on the client if there is a prediction key associated with them).
+> このパターンでは、PredictionKeyはサーバーから「跳ね返り」、UAbilitySystemComponent::ReplicatedPredictionKeyMap（replicatedプロパティ）を介してクライアントに戻ってきます。キーがサーバーからレプリケートされて戻ってくると、クライアントはローカルに予測された副作用（GameplayCuesやGameplayEffects）をすべて取り消すことができます：レプリケートされたバージョンは *必ず存在します* し、存在しない場合は予測ミスです。予測された副作用を元に戻すタイミングを正確に把握することがここでは重要です。(早すぎると隙間ができ、遅すぎると「二重」になってしまうからだ（ここでは、持続時間ベースのゲームプレイ・エフェクトのループするゲームプレイ・キューのような、ステートフルな予測について言及している）。バースト・ゲームプレイキューとインスタント・ゲームプレイ・エフェクトは、決して「元に戻す」ことも「ロールバック」することもない。予測キーが関連付けられている場合は、クライアント上でスキップされるだけです。)
 >
-> To further hit home the point: it’s crucial that predictive action is something the server does not do on their own, but only does so when the client tells them too. So having a generic “Create a key on demand and tell the server so I can run something” does not work unless that “something” is something the server will only do once told to by the client.
+> 予測動作は、サーバーが勝手に行うものではなく、クライアントが指示したときにのみ行うものであることが重要です。つまり、「必要に応じてキーを作成し、サーバーに伝えて、何かを実行できるようにする」という一般的な方法では、その「何か」が、クライアントに言われて初めてサーバーが実行するものでない限り、機能しないのです。
 >
-> Backing up to the original question: something like a fire and forget projectile. Both Paragon and Fornite have projectile actor classes that use GameplayCues. However we do not use the Prediction Key system to do these. Instead we have a concept on Non-Replicated GameplayCues. GameplayCues that just fire off locally and are skipped by the server completely.  Essentially all these are, are direct calls to UGameplayCueManager::HandleGameplayCue. They do not route through the UAbilitySystemComponent so no prediction key checks / early returns are made.
+> 最初の質問に戻りますが、火炎放射器のようなものです。ParagonとFortniteには、GameplayCuesを使用する投射アクタークラスがあります。しかし、我々はこれらを行うためにPrediction Keyシステムを使用していません。その代わりに、Non-Replicated GameplayCuesという概念があります。GameplayCueは、ローカルで実行され、サーバーでは完全にスキップされます。 基本的に、これらはUGameplayCueManager::HandleGameplayCueを直接呼び出すことである。UAbilitySystemComponentを経由していないので、予測キーのチェックやアーリーリターンは行われない。
 >
-> The downside with non replicated GameplayCues is that, well, they are not replicated. So its up to the projectile class/blueprint to make sure the code paths that call these functions are running on everyone. We have for cues startup (called in BeginPlay), explosion, hit wall/character, etc.
+> レプリケートされないGameplayCueの欠点は、レプリケートされないということです。そのため、これらの関数を呼び出すコードパスがすべての人に実行されるようにするのは、プロジェクタイルクラス/ブループリント次第です。スタートアップ（BeginPlayで呼び出される）、爆発、壁やキャラクターへの衝突などのキューを用意しています。
 >
-> These type ofevents are already generated client side, so calling into a non replicated gameplay cue was no big deal. Complicated blueprints can be tricky, and are up to the author to make sure they understand what is running where.
+> これらのタイプのイベントはすでにクライアントサイドで生成されているので、複製されないゲームプレイキューを呼び出すことは大きな問題ではありませんでした。複雑なブループリントは厄介なので、何がどこで実行されているかを理解するのは作者次第です。
 
 
-2. When using a WaitNetSyncAbilityTaskwith OnlyServerWaitto create a scoped prediction window in a locally predicted GameplayAbility, could players potentially cheat by delaying their packets to the Server to control GameplayAbilitytiming since the Server is waiting for their RPC withtheir prediction key? Was this ever an issue in Paragon or Fortnite, and if so, what did Epic do to remedy it?
+2. WaitNetSyncAbilityTaskとOnlyServerWaitを使用して、ローカルに予測されたGameplayAbilityにスコープ付きの予測ウィンドウを作成した場合、プレイヤーはGameplayAbilityのタイミングをコントロールするためにサーバーへのパケットを遅らせることで、サーバーが予測キーを含むRPCを待っているため、不正行為を行う可能性がありますか？これはParagonやFortniteで問題になったことがありますか？また、問題になった場合、Epicはどのように対処しましたか？
 
-> Yes, this is a valid concern. Any ability blueprint running on the server that is waiting for a client “signal” is potentially vulnerable to lag switch type exploits.
+> はい、これは重要な問題です。サーバー上で実行されているアビリティ ブループリントで、クライアントの「信号」を待っているものは、ラグスイッチのような悪用される可能性があります。
 >
-> Paragon had a custom targeting task similar to UAbilityTask_WaitTargetData. In this task we had timeouts, or a “max delay” that we would wait on the client for instantaneous targeting modes. If the targeting mode was waiting for user confirmation (button press) then it would be ignored since the user is allowed to take his time. But for abilities that instantly confirmed targeting we would only wait a certain amount of time before either A) generating the target data server side of B) canceling the ability.
+> Paragonには、UAbilityTask_WaitTargetDataに似たカスタムターゲティングタスクがありました。このタスクでは、瞬時のターゲティングモードのために、クライアントを待機させるタイムアウトや「最大遅延」がありました。ターゲティングモードがユーザーの確認（ボタンを押す）を待っている場合は、ユーザーが時間をかけることができるので、それは無視されます。しかし、即座にターゲティングを確認するアビリティについては、A)サーバー側でターゲットデータを生成するか、B)アビリティをキャンセルするまで、一定の時間だけ待つことになります。
+
+> WaitNetSyncにはそのようなメカニズムはありませんでしたが、これは非常にまれにしか使われませんでした。
+
+> > フォートナイトではこのようなものを利用していないと思います。フォートナイトの武器アビリティは、1つのフォートナイト固有のRPCにバッチされた特殊なケースで、アビリティの起動、ターゲットデータの提供、アビリティの終了を行う1つのRPCです。そのため、バトルロイヤルでは武器アビリティは本質的にこのような脆弱性はありません。
 >
-> We never had such mechanisms for WaitNetSync, which we used pretty sparingly.
+> 私の考えでは、これはおそらくシステム全体で解決できることだと思いますが、私たちがすぐに変更することはないでしょう。WaitNetSyncをスポット的に修正して、あなたの言うケースの最大遅延を含めることは、おそらく合理的なタスクですが、やはり当分の間、私たちの側でこれを行うことはなさそうです。
+
+
+3. EGameplayEffectReplicationModeを ParagonとFortniteはどちらを使用しているのか、またEpicが推奨する使用タイミングは何か？
+
+> どちらのゲームも、プレイヤーが操作するキャラクターにはMixedモードを、AIが操作するキャラクター（AIミニオン、ジャングルクリープ、AIハスクなど）にはMinimalモードを基本的に使用しています。これは、マルチプレイヤーゲームでシステムを使用する多くの人にお勧めしたい方法です。これらの設定は、プロジェクトの早い段階で行った方が良いでしょう。
 >
-> I don’t believe Fortnite makes use of anything like this though. The weapon abilities in Fortnite are special cased batched to a single fortnite-specific RPC: one RPC to activate the ability, provide target data, and end the ability. So weapon abilities are intrinsically not vulnerable to this in Battle Royale.
+> Fortniteでは、さらに数歩進んだ最適化が行われています。シミュレートされたプロキシについては、 UAbilitySystemComponentをまったく再現していません。コンポーネントとアトリビュートのサブオブジェクトは、所有する fortnite player state クラスの ::ReplicateSubobjects() 内でスキップされます。複製された最低限のデータは、ASCからポーン自体の構造体にプッシュします（基本的には、属性値のサブセットと、ビットマスクで複製するタグのホワイトリストサブセット）。これを「プロキシ」と呼びます。受信側では、ポーンに複製されたプロキシデータを受け取り、プレイヤーの状態に応じてASCにプッシュします。その代わりに、ポーン上の最小限のプロキシ構造を介してデータを複製し、受信側のASCにルーティングします。これは、A)より最小限のデータセット、B)ポーンの関連性を利用する、という点で有利です。
+
+> しかし、その後に行われた他のサーバー側の最適化（レプリケーショングラフなど）によって、この方法がまだ必要かどうかはわかりませんし、最も保守性の高いパターンでもありません。
+
+
+4. GameplayPrediction.hのようにGameplayEffectsの除去を予測することはできないので、GameplayEffectsの除去におけるレイテンシーの影響を軽減する方策はありますか？例えば、移動速度の低下を除去する場合、現在はサーバーがGameplayEffectsの除去を複製してプレイヤーのキャラクターの位置をスナップするのを待つ必要があります。
+
+> これは難しい問題で、良い答えはありません。私たちは一般的に、この問題を許容範囲とスムージングで回避してきました。能力システムとキャラクター移動システムとの正確な同期が良い状態ではなく、修正したいと考えていることには完全に同意します。
 >
-> My take is that this is something that could probably be solved system wide but I don’t see us making the change ourselves anytime soon. Spot fixing WaitNetSync to include a max delay for the case you mention is probably a reasonable task, but again - unlikely we will do this on our end in the immediate future.
-
-
-3. Which EGameplayEffectReplicationModedid Paragon and Fortnite use and what are Epic’s recommendations for when to use each?
-
-> Both games essentially use Mixed mode for their player controlled characters and Minimal for AI controlled (AI minions, jungle creeps, AIHusks, etc). This is what I would recommend most people using the system in a multiplayer game. The sooner into your project you set these, the better.
+> 私はGEを予測的に削除できるようにすることを考えていましたが、すべてのエッジケースを解決してから次のステップに進むことはできませんでした。キャラクターの移動は、能力システムや移動速度修正の可能性などを知らない内部の保存された移動バッファを持っているので、これはすべてを解決するものではありません。GEの削除を予測できない以外にも、修正のフィードバックループに陥る可能性があります。
 >
-> Fortnite goes a few steps further with its optimizations. It actually does not replicate the UAbilitySystemComponent at all for simulated proxies. The component and attribute subobjects are skipped inside ::ReplicateSubobjects() on the owning fortnite player state class. We do push the bare minimum replicated data from the ability system component to a structure on the pawn itself (basically, a subset of attribute values and a white list subset of tags that we replicate down in a bitmask). We call this a “proxy”. On the receiving side we take the proxy data, replicated on the pawn, and push it back into ability system component on the player state. So you do have an ASC for each player in FNBR, it just doesn’t directly replicate: instead it replicates data via a minimal proxy struct on the pawn and then routes back to the ASC on receiving side. This is advantage since its A) a more minimal set of data B) takes advantage of pawn relevancy.
+> > 本当に絶望的なケースがあると思うのであれば、移動速度GEを阻害するGEを予測的に追加することができます。私自身はやったことがありませんが、以前に理論的に考えたことがあります。あるクラスの問題に役立つことができるかもしれません。
+
+
+5. AbilitySystemComponentは、ParagonやFortniteではPlayerStateに、Action RPG SampleではCharacterに存在することがわかっています。AbilitySystemComponentsがどこに置かれるべきか、Epicの内部規則、ガイドライン、または推奨事項は何ですか？
+
+> 一般的には、リスポーンする必要のないものは、オーナーとアバター アクターを同じものにすべきだと思います。AIの敵、建物、ワールドプロップなどのようなものです。
 >
-> I’m not sure if it is still necessary with other server side optimizations that have been done since then (Replication Graph, etc) and it is not the most maintainable pattern.
+> リスポーンするものは、オーナーとアバターを別のものにして、アビリティシステムコンポーネントをリスポーン後にセーブオフ/再作成/復元する必要がないようにします。PlayerStateは論理的な選択で、すべてのクライアントに複製されます（PlayerControllerはそうではありません）。欠点としては、PlayerStateは常に関連性があるので、100人規模のゲームでは問題が発生する可能性があります。(質問3でFNが行ったことについてのメモを参照してください)。
 
 
-4. Since we cannot predict the removal of GameplayEffectsas per GameplayPrediction.h, are there any strategies for mitigating the effects of latency on removing GameplayEffects? For example, when removing a movement speed slow, we currently have to wait for the Server to replicate the GameplayEffectremoval resulting in a snap of the player’s character position.
+6. 所有者は同じだがアバターが異なる複数のAbilitySystemComponentsを持つことは可能でしょうか？
 
-> This is a tough one and I don’t have a good answer. We generally skirted around these problems with tolerances and smoothing. I totally agree that ability system and precise synchronization with the character movement system is not in a good place and something we do want to fix.
+> 私が考える最初の問題は、所有するアクターにIGameplayTagAssetInterfaceとIAbilitySystemInterfaceを実装することです。前者は可能かもしれません：すべてのASCからタグを集約するだけです（ただし、気をつけてください - HasAlMatchingGameplayTagsは、クロスASCの集約によってのみ満たされるかもしれません。その呼び出しを各ASCに転送して、結果を一緒にORするだけでは十分ではないでしょう）。) しかし、後者はさらにやっかいです。どのASCが権威あるものなのか？誰かがGEを適用したいと思ったとき、どのASCがそれを受け取るべきなのか？これらを解決できるかもしれませんが、オーナーが複数のASCを傘下に持つという点では、こちらの問題が最も難しいでしょう。
 >
-> I had a shelf of allowing predictive removal of GEs but could never work out all edge cases before having to move on. This doesn’t solve everything though since character movement still has an internal saved move buffer that does not know anything about the ability system and possible movement speed modifiers, etc. It is still possible to get into correction feedback loops even outside of not being able to predict the removal of GEs.
+> ポーンと武器のASCを分けることは、それだけで意味があります。例えば、武器を説明するタグと、所有するポーンを説明するタグを区別することができます。武器に付与されたタグは所有者にも「適用」され、それ以外には適用されないというのも意味があるかもしれません（例えば、属性とGEは独立していますが、所有者は上述のように所有しているタグを集約します）。これはうまくいくと思いますよ。しかし、同じオーナーが複数のASCを持っていると厄介なことになるかもしれません。
+
+
+7. ローカルに予測されたアビリティのクールダウン時間を、サーバーがオーナーのクライアントに上書きしないようにする方法はありますか？遅延の大きいシナリオでは、ローカルのクールダウン期間が終了しても、サーバー上ではまだクールダウンされている場合、所有クライアントはアビリティを再度起動しようとします。所有クライアントのアクティベーション要求がネットワーク経由でサーバーに到達する頃には、サーバーはクールダウンを解除しているか、サーバーは残りのミリ秒の間、アクティベーション要求をキューに入れることができるかもしれません。そうでなければ、レイテンシーの高いクライアントは、レイテンシーの低いクライアントに比べて、能力を再起動できるまでの時間が長くなります。これは、クールダウンが1秒以下の基本攻撃のように、クールダウンが非常に短いアビリティで顕著に現れます。サーバーがローカルに予測されるアビリティのクールダウン時間を上書きしないようにする方法がないとしたら、アビリティを再起動する際の高いレイテンシーの影響を緩和するために、Epicはどのような戦略をとっているのでしょうか？例を挙げて説明すると、パラゴンの基本的な攻撃やその他のアビリティは、高レイテンシーのプレイヤーが、ローカルに予測された低レイテンシーのプレイヤーと同じ速度で攻撃や起動ができるように、Epicはどのように設計したのでしょうか？
+
+> 簡単に言うと、これを防ぐ方法はなく、Paragonは間違いなくその問題を抱えていました。高レイテンシーの接続では、基本攻撃のROFが低くなります。
 >
-> If you think you have a case that is truly desperate, you are able to predictively add a GE that would inhibit your movement speed GEs. I’ve never done this myself but have theorized about it before. It may be able to help with a certain class of problem.
-
-
-5. We know that the AbilitySystemComponentlives on the PlayerStatein Paragon and Fortnite and on the Characterin the Action RPG Sample. What are Epic’s internal rules, guidelines, or recommendations for where the AbilitySystemComponentshould live --what should its Ownerbe?
-
-> In general I would say anything that does not need to respawn should have the Owner andAvatar actor be the same thing. Anything like AI enemies, buildings, world props, etc.
+> この問題を解決するために、「GE reconciliation」を追加し、GEの継続時間を計算する際に遅延を考慮するようにしました。基本的には、GEの総時間の一部をサーバーが負担することで、GEのクライアント側の有効時間は、どのような遅延があっても100％一貫したものになります（ただし、変動は問題になります）。しかし、私はこれを出荷可能な状態にすることはできませんでしたし、プロジェクトの進行が早かったため、この問題に完全に取り組むことはできませんでした。
 >
-> Anything that does respawn should have the Owner and Avatar be different so that the Ability System Component does not need to be saved off / recreated / restored after a respawn.. PlayerState is the logical choice it is replicated to all clients (where as PlayerController is not). The downside is PlayerStates are always relevant so you can run into problems in 100 player games. (See notes on what FN did in question #3).
+> フォートナイトでは、武器の発射速度を独自に記録しています。これがあなたのゲームにとって致命的な問題であれば、この方法をお勧めします。
 
 
-6. Is it viable to have several AbilitySystemComponentswhich have the same owner but different avatars (e.g. on pawn and weapon/items/projectiles with Ownerset to PlayerState)?
+8. GameplayAbilitySystemプラグインのEpicのロードマップを教えてください。2019年以降にEpicが追加を予定している機能を教えてください。
 
-> The first problem I see there would be implementing the IGameplayTagAssetInterface and IAbilitySystemInterface on the owning actor. The former may be possible: just aggregate the tags from all all ASCs (but watch out - HasAlMatchingGameplayTags may be met only via cross ASC aggregation. It wouldn't be enough to just forward that calls to each ASC and OR the results together). But the later is even trickier: which ASC is the authoritative one? If someone wants to apply a GE - which one should receive it? Maybe you can work these out but this side of the problem will be the hardest: owners will multiple ASCs beneath them.
+> 現時点では、全体的にシステムはかなり安定していると感じており、大きな新機能に取り組んでいる人はいません。フォートナイトのためやUDN/プルリクエストからバグフィックスや小さな改善が行われることはありますが、今はそれだけです。
 >
-> Separate ASCs on the pawn and the weapon can make sense on its own though. E.g, distinguishing between tags the describe the weapon vs those that describe the owning pawn. Maybe it does make sense that tags granted to the weapon also “apply” to the owner and nothing else (E.g, attributes and GEs are independent but the owner will aggregate the owned tags like I describe above). This could work out, I am sure. But having multiple ASCs with the same owner may get dicey.
+> 長期的には、いずれ「V2」や大きな変更を行うことになると思います。このシステムを書くことで多くのことを学びましたし、多くのことが正しく、多くのことが間違っていたと感じています。それらの間違いを修正したり、上で指摘された致命的な欠陥を改善する機会があれば嬉しいですね。
 
-
-7. Is there a way to stop the Server from overwriting the cooldown duration of locally predicted abilities on the Owning Client? In scenarios of high latency, this would let theOwning Client "try" to activate the ability again when its local cooldown expires but it is still on cooldown on the Server. By the time the Owning Client's activation request reaches the Server over the network, the Server may be off cooldown or the Server might be able to queue the activation request for the remaining milliseconds that it has left. Otherwise as is, clients with higher latency have a longer delay before when they can reactivate an ability versus those with less latency. This is most apparent with very low cooldown abilities like a basic attack that can be less than one second of cooldown. If there isn't a way to stop the Server from overwriting the cooldown duration of locally predicted abilities, what is Epic's strategy for mitigating theeffects of high latency on reactivating abilities? To word it another example-based way, how did Epic design Paragon's basic attacks and other abilities so that high latency players could attack or activate at the same speed as low latency players with local prediction?
-
-> The short answer there is not a way to prevent this and Paragon definitely had the problem. Higher latency connections would have a lower ROF with basic attacks.
+> もしV2が出るとしたら、アップグレードパスを提供することが何よりも重要です。私たちは、V2を作ってFortniteを永遠にV1のままにしておくようなことはしません。可能な限り自動的に移行するような道筋や手順があるはずですが、それでもほぼ確実に手動での作り直しが必要になるでしょう。
 >
-> I attempted to fix this by adding “GE reconciliation” where latency was taken into account when calculating GE duration. Essentially allowing the server to eat some of the total GE time so that the effective time of the GE client side would be 100% consistent with any amount of latency (though fluctuations could still cause issues). However I never got this working in a state that could ship and the project moved fast and we just never fully addressed it.
+> 優先度の高い修正点は以下の通りです。
+> * キャラクター移動システムとの相互運用性の向上。クライアント予測の統一。
+> * GE除去の予測（質問番号4
+> * GEのレイテンシーの調整（質問番号8
+> * RPCのバッチ処理やプロキシ構造など、一般的なネットワークの最適化。ほとんどがFortniteのために行ったものですが、少なくともゲームが独自のゲーム固有の最適化をより簡単に書けるように、より一般化された形に分解する方法を見つけます。
 >
-> Fortnite does its own bookkeeping for weapon firing rates: it does not use GEs for cooldowns on weapons. I would recommend this if this is a critical problem for your game.
+> より一般的なリファクタリングタイプの変更を検討しています。
+> * GEがスプレッドシートの値を直接参照するのを根本的にやめて、代わりにパラメータを発行できるようにして、そのパラメータをスプレッドシートの値にバインドされた上位のオブジェクトが埋めるようにしたいと思います。現在のモデルの問題点は、GEがカーブテーブルの行と密接に結合しているために、共有化ができなくなってしまうことです。パラメタライズのための一般化されたシステムを書けば、V2システムの基盤となると思います。
+> * UGameplayAbilityの「ポリシー」の数を減らします。私ならReplicationPolicy InstancingPolicyを削除します。Replicationは、実際にはほとんど必要なく、混乱の原因となっています。InstancingPolicyの代わりに、FGameplayAbilitySpecをサブクラス化可能なUObjectにするべきだと思います。これはイベントを持ち、ブループリントが可能な「インスタンス化されていない能力オブジェクト」であるべきでした。UGameplayAbilityは、「実行ごとにインスタンス化される」オブジェクトであるべきです。その代わり、「インスタンス化されない」能力は、新しいUGGameplayAbilitySpecオブジェクトを介して実装されます。
+> * システムは、「フィルタリングされたGEアプリケーション・コンテナ」（どのGEをどのアクターに適用するかを、より高レベルのゲームプレイ・ロジックでデータ駆動する）、「オーバーラッピング・ボリューム・サポート」（コリジョン・プリミティブのオーバーラップ・イベントに基づいて「フィルタリングされたGEアプリケーション・コンテナ」を適用する）など、より「中間レベル」の構成要素を提供すべきです。これらの構成要素は、各プロジェクトがそれぞれの方法で実装することになります。正しく実装することは簡単なことではありません。
+> * 一般的には、プロジェクトを立ち上げるために必要な定型的なものを減らします。パッシブアビリティーや基本的なスキャン武器のようなものを提供するために、"Exライブラリ "などの別モジュールを用意することも考えられます。このモジュールはオプションですが、すぐに使用できるようになるでしょう。
+> * GameplayCuesをAbilitySystemとは別のモジュールに移したいと思います。これは私の個人的な意見ですが、このモジュールにはたくさんの改善点があると思います。
 
 
-8. What is Epic’s roadmap for the GameplayAbilitySystem plugin? Which features does Epic plan to add in 2019 and beyond?
-
-> We feel that overall the system is pretty stable at this point and we don’t have anyone working on major new features. Bug fixes and small improvements occasionally are made for Fortnite or from UDN/pull requests, but that is it right now.
->
-> Longer term, I think we will eventually do a “V2” or some big changes. We learned a lot from writing this system and feel we got a lot right and a lot wrong. I would love a chance to correct those mistakes and improve some of the fatal flaws that were pointed out above.
->
-> If a V2 was to ever come, providing an upgrade path would be of utmost importance. We would never make a V2 and leave Fortnite on V1 forever: there would be some path or procedures that would automatically migrate as much as possible, though there would still almost certainly be some manual remaking required.
->
-> The high priority fixes would be:
-> * Better interoperability with the character movement system. Unifying client prediction.
-> * GE removal prediction (question #4)
-> * GE latency reconciliation (question #8)
-> * Generalized network optimizations such as batching RPCs and proxy structures. Mostly the stuff that we’ve done for Fortnite but find ways to break it down into more generalized form, at least so that games can write their own game specific optimizations more easily.
->
-> The more general refactor type of changes I would consider making:
-> * I would like to look at fundamentally moving away from having GEs reference spreadsheet values directly, instead they would be able to emit parameters and those parameters could be filled by some higher level object that is bound to spreadsheet values. The problem with the current model is that GEs become unsharable due to their tight coupling with the curve table rows. I think a generalized system for parameterization could be written and be the underpinning of a V2 system.
-> * Reduce number of “policies” on UGameplayAbility. I would remove ReplicationPolicy InstancingPolicy. Replication is, imo, almost never actually needed and causes confusion. InstancingPolicy should be replaced instead by making FGameplayAbilitySpec a UObject that can be subclassed. This should have been the “non instantiated ability object” that has events and is blueprintable. The UGameplayAbility should be the “instanced per execution” object. It could be optional if you need to actually instantiate: instead “non instanced” abilities would be implemented via the new UGameplayAbilitySpec object. 
-> * The system should provide more “middle level” constructs such as “filtered GE application container” (data drive what GEs to apply to which actors with higher level gameplay logic), “Overlapping volume support” (apply the “Filtered GE application container” based on collision primitive overlap events), etc.These are building blocks that every project ends up implementing in their own way. Getting them right is non trivial so I think we should do a better job providing some basic implementations. 
-> * In general, reducing boilerplate needed to get your project up and running. Possibly a separate module “Ex library” or whatever that could provide things like passive abilities or basichitscan weapons out of the box. This module would be optional but would get you up and running quickly.
-> * I would like to move GameplayCues to a separate module that is not coupled with the ability system. I think there are a lot of improvements that could be made here.
-
-
-> This is only my personal opinion and not a commitment from anyone. I think the most realistic course of action will be as new engine tech initiatives come through, the ability system will need to be updated and that will be a time to do this sort of thing. These initiatives could be related to scripting, networking, or physics/character movement. This is all very far looking ahead though so I cannot give commitments or estimates on timelines.
+> これは私の個人的な意見であり、誰かに約束されたものではありません。最も現実的な方法は、新しいエンジン技術の構想が出てきたときに、AbilitySystemを更新する必要があり、そのときにこのようなことをするのではないかと考えています。このような取り組みは、スクリプト、ネットワーク、物理/キャラクターの動きなどに関連するものです。しかし、これは非常に先のことなので、タイムラインの確約や見積もりはできません。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="resources-daveratti-community2"></a>
 #### 11.1.2 Community Questions 2
-Community member [iniside](https://github.com/iniside)'s Q&A with Dave Ratti:
+コミュニティメンバー[iniside](https://github.com/iniside)のDave Ratti氏へのQ&Aです。
 
-1. Is the support for decoupled fixed ticking planned ? I'd like to
-have Game Thread be fixed (like 30/60fps) and let the rendering thread
-run wild. I ask if this is something we should expect in future or
-not, to make some assumptions about how gameplay should work.
-I ask mainly because there is now a fixed async tick for physics and
-this poses a question how the rest of the system might work in the
-future. I do not hide that having the ability to have fixed tick game
-thread without also fixing tick rate of the rest of the engine would
-be beyond awesome.
+1. 固定フレームレートへの対応は予定されていますか？私の希望としては
+ゲームスレッドは固定（30/60fpsとか）にして、レンダリングスレッドを自由に走らせたいと思っています。これは将来的に期待すべきことなのか、そうでないのかを聞いています。
+ゲームプレイがどのように機能するかについての仮定をするためです。
+この質問の主な理由は、現在、物理学のために固定の非同期ティックがあり、これは将来的にシステムの残りの部分がどのように動作するかという問題を提起しています。私は、ゲームスレッドのティックレートを固定せずに、ゲームスレッドのティックレートを固定する機能があることを隠していません。
+スレッドを固定チックにすることができたら、エンジンの他の部分のチックレートを修正することなく、これは素晴らしいことです。
 
-> There are no plans to decouple rendering frame rate and game thread tick frame rate. I think the ship has sailed on this ever happening due to the complexity of these systems and the requirement to preserve backwards compatibility with previous engine versions.
+> レンダリングフレームレートとゲームスレッドのティックフレームレートを切り離す計画はありません。これらのシステムの複雑さと、以前のエンジンバージョンとの後方互換性を維持する必要があるため、実現の見通しは立っていないと思います。
 >
-> Instead, the direction we've gone is to have an asynchronous "Physics Thread" which runs at a fixed tick rate, independent of the game thread. Things that need to run at a fixed rate can run here and the game thread / rendering can operate how they always have.
->
-> It's worth clarifying that Network Prediction supports what it calls Independent Ticking and Fixed Ticking modes. My long term plan is to keep Independent Ticking roughly how it is today in Network Prediction where it runs on the game thread at variable frame rate and there is no "group/world" prediction, it's just the classic "clients predict their own pawn and owned actors" model. And Fixed Ticking would be what uses the async physics stuff and allows you to predict non client controlled/owned actors like physics objects and other clients/pawns/vehicles/etc.
+> その代わりに、ゲームスレッドとは独立した、固定ティックレートで動作する非同期の「物理スレッド」を用意することにしました。固定レートで動作させる必要があるものはここで動作させ、ゲームスレッドやレンダリングはこれまで通り動作させることができます。
+
+> Network Predictionは、Independent TickingとFixed Tickingの2つのモードをサポートしています。私の長期的な計画では、Independent Ticking を現在の Network Prediction の状態に近づけることを考えています。このモードでは、ゲーム スレッド上で可変フレーム レートで動作し、「グループ/ワールド」の予測はありません。そしてFixed Tickingは、非同期の物理的なものを使用し、物理オブジェクトや他のクライアント/ポーン/車両など、クライアントが制御/所有していないアクターを予測することができるものです。
 
 
-2. Is there any plan on how the integration of Network Prediction will
-look with the Ability System ? Like for example, fixed frame ability
-activation (so the server gets frames in which abilities were
-activated and tasks executed instead of prediction keys) ?
+2. ネットワーク予測をアビリティシステムと統合する予定はありますか？例えば、固定フレームのアビリティ発動（予測ではなく、能力が発動してタスクが実行されたフレームをサーバーが取得する）とか、予測キーではなく、能力が発動したフレームやタスクが実行されたフレームをサーバーが取得するようにするなど）？
 
-> Yes, the plan is to rewrite/remove the Ability System's prediction keys and replace them with Network Prediction constructs. The MockAbility examples in NetworkPredictionExtras show how this might work but they are more "hard coded" than what GAS will require. 
+> はい、アビリティシステムの予測キーを書き換え/削除して、ネットワーク予測のコンストラクトに置き換える予定です。NetworkPredictionExtrasに掲載されているMockAbilityの例は、これがどのように機能するかを示していますが、GASが必要とするものよりも「ハードコード」されています。
 >
-> The main idea would be that we remove the explicit client->server Prediction Key exchange in the ASC's RPCs. There would no longer be prediction windows or scoped prediction keys. Instead everything would be anchored around NetworkPrediction frames. The important thing is that client and server agree on when things happen. Examples would be:
+> 主なアイデアは、ASCのRPCで明示的なクライアント->サーバーの予測キーの交換を削除することです。予測ウィンドウやスコープ付きの予測キーはもはや存在しません。その代わり、すべてがNetworkPredictionフレームに固定されます。重要なのは、クライアントとサーバーがいつ何が起こるかについて合意することです。例を挙げると
 >
-> * When abilities were activated/ended/cancelled
-> * When Gameplay Effects were applied/removed
-> * Attribute values (what an attributes value was at frame X)
+> アビリティが起動/終了/キャンセルされたとき
+> ゲームプレイエフェクトの適用/削除のタイミング
+> 属性値(フレームXでの属性値)
 >
-> I think this could be done generically at the ability system level. But actually making the user-defined logic inside a UGameplayAbility completely rollback-able would still take more work. We may end up having a subclass of UGameplayAbility that is fully rollbackable and has access to a more limited set of functionality or only Ability Tasks that are marked as rollback-friendly. Something like that. There are also many implications to animation events and root motion and how those are processed.
+> これはアビリティシステムレベルでは一般的に可能だと思います。しかし、実際にUGGameplayAbility内のユーザー定義のロジックを完全にロールバック可能にするには、さらに多くの作業が必要です。最終的にはUGGameplayAbilityのサブクラスとして、完全にロールバック可能で、より限定された機能セットにアクセスできるようにしたり、ロールバックに適しているとマークされているアビリティタスクのみにアクセスできるようにすることになるかもしれません。そんなところでしょうか。また、アニメーションイベントやルートモーション、それらの処理方法にも多くの影響があります。
 >
-> Wish I had a more clear answer but it's really important we get the foundation right before touching GAS again. Movement and physics have to be solid before the higher level systems can be changed.
+> もっと明確な答えがあればよかったのですが、GASに再び触れる前に基礎をしっかりと固めることがとても重要です。上位のシステムを変更する前に、動きと物理がしっかりしていなければなりません。
 
 
-3. Is there a plan to move Network Prediction development toward the
-main branch ? Not gonna lie, I'd really like to check the latest code.
-Regardless of it's state.
+3. Network Predictionの開発を本家に移行する予定はありますか？
+メインブランチに移す予定はありますか？正直に言うと、最新のコードをチェックしたいですね。
+現在の状態に関わらず。
 
-> We are working towards it. The system work is still all being done in NetworkPrediction (see NetworkPhysics.h) and the underlying async physics stuff should be all available (RewindData.h etc). But we also have use cases in Fortnite that we have been focused on that obviously can't be made public. We are working through bugs, performance optimizations, etc.
+> それに向けて動いています。システムの作業はまだすべてNetworkPredictionで行われていますし（NetworkPhysics.hを参照）、基盤となる非同期の物理的なものはすべて利用できるはずです（RewindData.hなど）。また、Fortniteのユースケースにも注力していますが、これは明らかに公開できません。バグ取りやパフォーマンスの最適化などを行っています。
 >
-> For more context: when working on the early versions of this system, we were very focused on the "front end" of things - how state and simulations were defined and written. We learned a lot there. But as the async physics stuff has come online, we've been much more focused on just getting something real to work in this system, at the expense of throwing out some of our early abstractions. The goal here is to circle back when the real thing is working and reunifying things. E.g, get back to the "front end" and make the final version of that on top of the core pieces of tech we are working on now.
-
-
-4. For some time on Main there was a plugin for sending Gameplay
-Messages (Looked like Event/Message Bus), but it was removed. Any
-plans to restore it ? With the Game Features/Modular Gameplay plugins,
-having a generic Event Bus Dispatcher would be extremely useful.
-
-> I think you are referring to the GameplayMessages plugin. This will probably come back at some point - the API isn't really finalized yet and the author didn't mean for it to be public yet. I agree it should be useful for modular gameplay design. But it's not really my area so I don't have much more information. 
+> このシステムの初期バージョンでは、状態やシミュレーションの定義や記述など、「フロントエンド」に重点を置いていました。そこで多くのことを学びました。しかし、非同期物理処理が稼働するようになってからは、初期の抽象化を捨ててまで、このシステムで実際に動作するものを作ることに集中してきました。ここでの目標は、本物が動くようになったら、また戻ってきて、物事を再統合することです。例えば、「フロントエンド」に戻って、今取り組んでいる技術の中核部分の上に、その最終バージョンを作ることです。
 
 
-5. I've been playing recently with async fixed physics and the results
-are promising, though if there is going to be NP update in the future
-I will probably just play around and wait, since to get it working I
-still need to get entire engine into fixed tick and on the other hand
-I try to keep physics at 33ms. Which does not make for a good
-experience if everything is at 30 fps (:.
+4. Mainにはしばらくの間、ゲームプレイメッセージ（イベント/メッセージのようなもの）を送信するプラグインがありました。
+メッセージを送信するプラグインがありましたが、削除されました。何か
+復活させる予定はありますか？Game Features/Modular Gameplayのプラグインで。
+汎用のイベントバスディスパッチャがあれば非常に便利です。
 
-I have noticed there was some work on Async
-CharacterMovementComponent, but not sure if this will be using Network
-Prediction, or it is a separate effort ?
+> GameplayMessagesプラグインのことを言っているのだと思います。APIがまだ完成しておらず、作者もまだ公開するつもりはなかったようです。モジュラー・ゲームプレイ・デザインに有用であることには同意します。しかし、それは私の分野ではないので、これ以上の情報はありません。
 
-Since I noticed it, I also went ahead and tried to implement my custom
-async movement at fixed tick rate, which worked okay, but on top of it
-I also needed to add a separate update for interpolation. The setup
-was to run simulation tick on separate worker threads at fixed 33ms
-update, do calculations, save result, and interpolate it at the game
-thread to match current frame rate. Not perfect, but it got the job
-done.
 
-My question is, if this is something that might be easier to set up in
-the future, as there is just quite a bit of boilerplate code to write,
-(the interpolation part) and it's not particularly efficient to
-interpolate each moving object individually.
+5. 最近、非同期固定物理で遊んでいますが、その結果は有望です。
+将来的にNPアップデートがあるならば、私はたぶん、ただ遊んで待つだけになるでしょう。
+エンジン全体を固定ティックにする必要がありますし、一方では
+私は物理演算を33msに維持しようとしています。これでは、すべてが30fpsの場合、良い経験にはなりません。
+非同期のCharacterMovementComponentに関する作業が行われていることに気づきました。
+CharacterMovementComponentに取り組んでいますが、これがNetwork
+予測を使うのか、それとも別の作業なのかはわかりません。
+せっかくなので、私もカスタムの固定ティックレートでの非同期動作を実装してみましたが、うまくいきました。
+補間のために別のアップデートを追加する必要がありました。設定は33msの固定更新で、別々のワーカースレッドでシミュレーションを実行することでした。
+更新し、計算を行い、結果を保存し、ゲームスレッドで現在のフレームレートに合わせて補間する。スレッドで現在のフレームレートに合わせて補間するというものでした。完璧ではありませんが、これで仕事は完了しました。
+質問ですが、これは将来的にもっと簡単にセットアップできるものなのでしょうか？
+(補間の部分)書くべき定型的なコードがかなりあり、動くオブジェクトを個別に補間するのは特に効率的ではありません。各移動体を個別に補間するのは効率的ではないからです。
+非同期処理は非常に興味深いものです。
+ゲームシミュレーションを固定の更新レートで実行できるようになるからです。
+固定スレッドは必要ありません）、より予測可能な結果が得られるからです。これは
+意図したものなのでしょうか？
+厳選されたシステムの利点なのでしょうか？私の記憶では、アクターのトランスフォームは更新されません。
+非同期で更新されず、ブループリントは完全にスレッドセーフではありません。言い換えれば、これはフレームワークレベルでサポートされる予定のものなのか、それとも各ゲームが独自に解決しなければならないことなのでしょうか？
 
-The async stuff is really interesting, because it would allow you to
-really run game simulation at fixed update rate (which would make
-fixed thread unneeded) and have more predictable results. Is this
-something that is intended going forward, or more of a benefit to
-select systems ? As far as I remember actor transforms are not updated
-async and blueprints are not entirely thread safe. In other words is
-it something that is planned to be supported at more of a framework
-level or something that each game has to solve on it's own ?
+> 非同期CharacterMovementComponent
+>
+> これは基本的に、CMCをそのまま物理スレッドに移植するための初期のプロトタイプ/実験です。私はこれをCMCの将来像とは考えていませんが、そのように発展させることも可能です。今のところ、ネットワークのサポートはありませんので、私が実際にフォローするようなものではありません。このシステムを開発している人たちは、このシステムによって追加される入力の遅延を測定し、それをどのように軽減するかに関心があります。
+>
+> エンジン全体をFixed Tickにする必要がありますが、一方で物理演算は33msに保つようにしています。全てが30fpsでは良い体験にはなりませんが(:.
 
-> Async CharacterMovementComponent
+> 非同期のものは非常に興味深いです。というのは、固定の更新レートでゲームシミュレーションを実行できるようになるからです。
 >
-> This is basically an early prototype/experiment of porting CMC as it is to the physics thread. I don't view it as the future of CMC yet, but it could evolve into that. Right now there is no networking support so it's not something I would really follow. The people doing it are mostly concerned with measuring input latency that this system would add and how that could be mitigated.
+> そうですね。ここでの目標は、物理の非同期化を有効にすることで、エンジンを可変ティックレートで動作させながら、物理や「コア」なゲームプレイシミュレーション（キャラクターの動き、車両、GASなど）を固定レートで動作させることができるということです。
 >
-> I still need to get entire engine into fixed tick and on the other hand I try to keep physics at 33ms. Which does not make for a good experience if everything is at 30 fps (:.
+> 現在、これを有効にするために設定する必要のある cvar は以下の通りです。これを有効にするには、以下のような cvar を設定する必要があります: (もうお分かりだと思いますが)  
+> `p.DefaultAsyncDt=0.0333`。 
+> `p.RewindCaptureNumFrames=64`.
 >
-> The async stuff is really interesting, because it would allow you to really run game simulation at fixed update rate (which would make fixed thread unneeded) 
+> カオスは物理状態の補間を行います(例えば、UPrimitiveComponentにプッシュバックされ、ゲームコードから見えるようになるトランスフォーム)。現在、`p.AsyncInterpolationMultiplier`というcvarがあり、それを見たい場合は、それをコントロールします。余分なコードを書かなくても、物理体のスムーズな連続した動きが見られるはずです。
 >
-> Yes. The goal here is that with async physics enabled, you can run the engine at variable tick rate while the physics and "core" gameplay simulations can run at the fixed rate (such as character movement, vehicles, GAS, etc).
+> > 物理体以外の状態を補間したい場合は、今はまだ、あなた次第です。例としては、クールダウンを非同期物理スレッドで更新（刻む）したいが、ゲームスレッドではスムーズな連続補間を行い、レンダリングフレームごとにクールダウンの視覚化が更新されるようにしたい、というものです。最終的にはこれを実現する予定ですが、まだ例はありません。
 >
-> These are the cvars that need to be set to enable this now: (I think you've figured this out)  
-> `p.DefaultAsyncDt=0.03333`  
-> `p.RewindCaptureNumFrames=64`
+> > かなりの量の定型的なコードを書かなければなりません。
 >
-> Chaos does provide interpolation for the physics state (E.g, the transforms that get pushed back to the UPrimitiveComponent and are visible to the game code). There is a cvar now, `p.AsyncInterpolationMultiplier`, which controls that if you want to look at it. You should see smooth continuous motion of physics bodies without having to write any extra code. 
+> そう、これが今までのシステムの大きな問題点でした。私たちは、経験豊富なプログラマーが、パフォーマンスと安全性を最大化するために使用できるインターフェースを提供したいと考えています（大量の危険や、「できたけど、やらないほうがいい」ことをせずに、予測通りに「ただ動く」ゲームプレイコードを書ける能力）。つまり、CharacterMovermentのようなものは、パフォーマンスを最大化するために多くのカスタム処理を行うことができます。例えば、テンプレート化されたコードを書いてバッチ更新を行う、ワイド化する、更新ループを個別のフェーズに分割するなどです。このような場合のために、非同期スレッドやロールバックシステムへの優れた「低レベル」のインターフェースを提供したいと考えています。また、今回のケースでは、キャラクターの動きのシステム自体が独自の方法で拡張可能であることが合理的です。例えば、カスタムの動作モードをブループリントする方法を提供したり、スレッドセーフなブループリントAPIを提供したりします。
 >
-> If you want to interpolate non physics state, it is still up to you to do that right now. The example would be like a cool-down that you want to update (tick) on the async physics thread but see smooth continuous interpolation on the game thread so that every render frame the cool down visualization is updated. We will get to this eventually but don't have examples yet.
->
-> there is just quite a bit of boilerplate code to write,
->
-> Yeah, so that has been a big general problem with the system up until now. We want to provide an interface that experienced programmers can use to maximize performance and safety (the ability to write gameplay code that "just works" predictively without tons of hazards and things you could-do-but-better-not). So something like CharacterMoverment might do a bunch of custom stuff to maximize its performance - e.g, writing templated code and doing batch updating, going wide, breaking the update loop into distinct phases etc. We want to provide a good "low level" interface into the async thread and rollback systems for this use case. And in this case too - it's still reasonable that the character movement system itself is extendable in its own way. For example providing a way to blueprint a custom movement mode and providing a blueprint API that is thread safe.
->
-> But we recognize this is not acceptable for simpler gameplay objects that don't really need their own "system". Something more inline with Unreal is what is needed. E.g, using the reflection system, having general blueprint support, etc. There are examples of blueprints being used on other threads (see BlueprintThreadSafe keyword and what the animation system has been working towards). So I think there will be some form of this one day. But again, we aren't there yet.
->
-> I realize you were just asking about interpolation but that is the general answer: right now we have you do everything manually like NetSerialize, ShouldReconcile, Interpolate, etc but eventually we'll have a way that is like "if you want to just use the reflection system, you don't have to manually write this stuff". We just don't want to *force* everyone to use the reflection system since that imposes other limitations that we think we don't want to take on the lowest levels of the system. 
->
-> And then just to tie this back to what I said earlier - right now we are really focused on getting a few very specific examples working and performant and then we will turn attention back to the front end and making things friendly to use and iterate on, reducing boilerplate, etc for everybody else to use. 
+> しかし、独自の「システム」をあまり必要としない、よりシンプルなゲームプレイオブジェクトに対しては、これは受け入れられないと認識しています。もっと Unreal に沿ったものが必要です。例えば、リフレクション システムの使用や、一般的なブループリントのサポートなどです。ブループリントが他のスレッドで使用されている例があります (BlueprintThreadSafe キーワードおよびアニメーション システムが目指しているものを参照)。ですから、いつかは何らかの形で実現されると思います。しかし、繰り返しになりますが、私たちはまだそこまで行っていません。
+
+> 今は、NetSerialize、ShouldReconcile、Interpolate など、すべてを手動で行うようにしていますが、最終的には、「リフレクション システムを使用したい場合は、このようなものを手動で記述する必要はありません」というような方法を用意します。ただ、誰もがリフレクションシステムを使うことを強制したくはありません。なぜなら、リフレクションシステムを使うことは、システムの最低レベルでは取りたくない別の制限を課すことになるからです。
+
+> そして、先ほどの話に戻りますが、今はいくつかの非常に具体的な例を動作させ、パフォーマンスを上げることに集中しています。その後、フロントエンドに目を向け、みんなが使いやすいように、使いやすく、繰り返し使えるように、定型文を減らすなどの工夫をしていきます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
