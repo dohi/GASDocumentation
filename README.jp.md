@@ -2167,49 +2167,50 @@ GASShooter は、アビリティのバッチ処理を可能にする Blueprint �
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-at"></a>
-### 4.7 Ability Tasks
+### 4.7 Ability Tasks: アビリティタスク
 
 <a name="concepts-at-definition"></a>
-### 4.7.1 Ability Task Definition
-`GameplayAbilities` only execute in one frame. This does not allow for much flexibility on its own. To do actions that happen over time or require responding to delegates fired at some point later in time we use latent actions called `AbilityTasks`.
+### 4.7.1 アビリティタスクの定義
+`GameplayAbilities`は1フレーム内でのみ実行されます。これだけではあまり柔軟性がありません。時間をかけて行われるアクションや、後から発射されるデリゲートへの対応を必要とするアクションを行うには、`AbilityTasks`と呼ばれる潜在的なアクション（latent actions）を使用します。
 
-GAS comes with many `AbilityTasks` out of the box:
-* Tasks for moving Characters with `RootMotionSource`
-* A task for playing animation montages
-* Tasks for responding to `Attribute` changes
-* Tasks for responding to `GameplayEffect` changes
-* Tasks for responding to player input
-* and more
+GASには多くの `AbilityTasks` が付属しています。
+* `RootMotionSource`を使ってキャラクターを動かすためのタスク。
+* アニメーションモンタージュを再生するタスク
+* `Attribute` の変更に応答するためのタスク
+* `GameplayEffect`の変更に対応するタスク
+* プレイヤーの入力に応答するためのタスク
+* などなど
 
-The `UAbilityTask` constructor enforces a hardcoded game-wide maximum of 1000 concurrent `AbilityTasks` running at the same time. Keep this in mind when designing `GameplayAbilities` for games that can have hundreds of characters in the world at the same time like RTS games.
+`UAbilityTask`のコンストラクタでは、ゲーム全体で同時実行可能な`AbilityTask`の最大数が1000個というハードコードが適用されます。RTSゲームのように何百人ものキャラクターが同時に登場するようなゲームで`GameplayAbilities`を設計する際には、この点に注意してください。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-at-definition"></a>
-### 4.7.2 Custom Ability Tasks
-Often you will be creating your own custom `AbilityTasks` (in C++). The Sample Project comes with two custom `AbilityTasks`:
-1. `PlayMontageAndWaitForEvent` is a combination of the default `PlayMontageAndWait` and `WaitGameplayEvent` `AbilityTasks`. This allows animation montages to send gameplay events from `AnimNotifies` back to the `GameplayAbility` that started them. Use this to trigger actions at specific times during animation montages.
-1. `WaitReceiveDamage` listens for the `OwnerActor` to receive damage. The passive armor stacks `GameplayAbility` removes a stack of armor when the hero receives an instance of damage.
+### 4.7.2 カスタムアビリティータスク
+多くの場合、独自のカスタム`AbilityTasks`を（C++で）作成することになります。サンプルプロジェクトには2つのカスタム`AbilityTasks`が付属しています。
+1. `PlayMontageAndWaitForEvent` は、デフォルトの `PlayMontageAndWait` と `WaitGameplayEvent` `AbilityTasks` を組み合わせたものです。これにより、アニメーション・モンタージュは、ゲームプレイ・イベントを `AnimNotifies` から開始した `GameplayAbility` に送り返すことができます。アニメーション・モンタージュ中の特定の時間にアクションを起こすために使用します。
+1. `WaitReceiveDamage`は`OwnerActor`がダメージを受けるのを待ちます。パッシブアーマースタック `GameplayAbility` は、ヒーローがダメージを受けたときにアーマーのスタックを取り除きます。
 
-`AbilityTasks` are composed of:
-* A static function that creates new instances of the `AbilityTask`
-* Delegates that are broadcasted on when the `AbilityTask` completes its purpose
-* An `Activate()` function to start its main job, bind to external delegates, etc.
-* An `OnDestroy()` function for cleanup, including external delegates that it bound to
-* Callback functions for any external delegates that it bound to
-* Member variables and any internal helper functions
+`AbilityTasks` は次のように構成されています。
 
-**Note:** `AbilityTasks` can only declare one type of output delegate. All of your output delegates must be of this type, regardless if they use the parameters or not. Pass default values for unused delegate parameters.
+* `AbilityTask` の新しいインスタンスを作成するスタティック関数。
+* `AbilityTask` が目的を達成したときにブロードキャストされるデリゲート
+* メインのジョブを開始したり、外部のデリゲートにバインドしたりするための `Activate()` 関数。
+* バインドされた外部デレゲートを含む、クリーンアップのための `OnDestroy()` 関数。
+* 外部のデリゲートにバインドされた場合のコールバック関数
+* メンバー変数と内部ヘルパー関数
 
-`AbilityTasks` only run on the Client or Server that is running the owning `GameplayAbility`; however, `AbilityTasks` can be set to run on simulated clients by setting `bSimulatedTask = true;` in the `AbilityTask` constructor, overriding `virtual void InitSimulatedTask(UGameplayTasksComponent& InGameplayTasksComponent);`, and setting any member variables to be replicated. This is only useful in rare situations like movement `AbilityTasks` where you don't want to replicate every movement change but instead simulate the entire movement `AbilityTask`. All of the `RootMotionSource` `AbilityTasks` do this. See `AbilityTask_MoveToLocation.h/.cpp` as an example.
+**注意：** `AbilityTasks` は1種類の出力デレゲートしか宣言できません。パラメータを使用するかどうかに関わらず、すべての出力デレゲートはこのタイプでなければなりません。未使用のデリゲートパラメータにはデフォルト値を渡します。
 
-`AbilityTasks` can `Tick` if you set `bTickingTask = true;` in the `AbilityTask` constructor and override `virtual void TickTask(float DeltaTime);`. This is useful when you need to lerp values smoothly across frames. See `AbilityTask_MoveToLocation.h/.cpp` as an example.
+`AbilityTasks`は、所有する`GameplayAbility`を実行しているクライアントやサーバー上でのみ実行されます。しかし、`AbilityTask` のコンストラクタで `bSimulatedTask = true;` を設定し、`virtual void InitSimulatedTask(UGameplayTasksComponent& InGameplayTasksComponent);` をオーバーライドし、すべてのメンバ変数を複製するように設定することで、`AbilityTask` をシミュレートされたクライアント上で実行するように設定することができます。これは、ムーブメントの `AbilityTask` のように、すべての動きの変化を再現するのではなく、ムーブメントの `AbilityTask` 全体をシミュレートしたいような稀な状況でのみ有効です。すべての `RootMotionSource` `AbilityTasks` はこれを行います。例として、`AbilityTask_MoveToLocation.h/.cpp` を参照してください。
+
+`AbilityTask` は、`AbilityTask` のコンストラクタで `bTickingTask = true;` を設定し、`virtual void TickTask(float DeltaTime);` をオーバーライドすると、`Tick` することができます。これは、フレーム間で値をスムーズに変換する必要がある場合に便利です。例として `AbilityTask_MoveToLocation.h/.cpp` を参照してください。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-at-using"></a>
-### 4.7.3 Using Ability Tasks
-To create and activate an `AbilityTask` in C++ (From `GDGA_FireGun.cpp`):
+### 4.7.3 アビリティタスクの使い方
+C++で`AbilityTask`を作成して起動する方法（`GDGA_FireGun.cpp`より）。
 ```c++
 UGDAT_PlayMontageAndWaitForEvent* Task = UGDAT_PlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(this, NAME_None, MontageToPlay, FGameplayTagContainer(), 1.0f, NAME_None, false, 1.0f);
 Task->OnBlendOut.AddDynamic(this, &UGDGA_FireGun::OnCompleted);
@@ -2220,62 +2221,62 @@ Task->EventReceived.AddDynamic(this, &UGDGA_FireGun::EventReceived);
 Task->ReadyForActivation();
 ```
 
-In Blueprint, we just use the Blueprint node that we create for the `AbilityTask`. We don't have to call `ReadyForActivate()`. That is automatically called by `Engine/Source/Editor/GameplayTasksEditor/Private/K2Node_LatentGameplayTaskCall.cpp`. `K2Node_LatentGameplayTaskCall` also automatically calls `BeginSpawningActor()` and `FinishSpawningActor()` if they exist in your `AbilityTask` class (see `AbilityTask_WaitTargetData`). To reiterate, `K2Node_LatentGameplayTaskCall` only does automagic sorcery for Blueprint. In C++, we have to manually call `ReadyForActivation()`, `BeginSpawningActor()`, and `FinishSpawningActor()`.
+ブループリントでは、`AbilityTask`用に作成したブループリントノードを使用するだけです。`ReadyForActivation()`を呼び出す必要はありません。これは `Engine/Source/Editor/GameplayTasksEditor/Private/K2Node_LatentGameplayTaskCall.cpp` によって自動的に呼び出されます。また、`K2Node_LatentGameplayTaskCall`は、`AbilityTask`クラスに`BeginSpawningActor()`と`FinishSpawningActor()`が存在する場合、自動的に呼び出します（`AbilityTask_WaitTargetData`参照）。繰り返しになりますが、`K2Node_LatentGameplayTaskCall`は、ブループリントのための自動化された魔術を行うだけです。C++ では、手動で `ReadyForActivation()`, `BeginSpawningActor()`, `FinishSpawningActor()` を呼び出さなければなりません。
 
 ![Blueprint WaitTargetData AbilityTask](https://github.com/dohi/GASDocumentation/raw/master/Images/abilitytask.png)
 
-To manually cancel an `AbilityTask`, just call `EndTask()` on the `AbilityTask` object in Blueprint (called `Async Task Proxy`) or in C++.
+手動で `AbilityTask` をキャンセルするには、ブループリント (`Async Task Proxy` と呼ばれる) または C++ で `AbilityTask` オブジェクトに対して `EndTask()` を呼び出すだけです。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-at-rms"></a>
-### 4.7.4 Root Motion Source Ability Tasks
-GAS comes with `AbilityTasks` for moving `Characters` over time for things like knockbacks, complex jumps, pulls, and dashes using `Root Motion Sources` hooked into the `CharacterMovementComponent`.
+### 4.7.4 ルートモーションソースのアビリティータスク
+GASには、`CharacterMovementComponent`にフックされた`RootMotionSource`を使って、ノックバック、複雑なジャンプ、プル、ダッシュなどのために`Characters`を時間をかけて動かすための`AbilityTasks`が付属しています。
 
-**Note:** Predicting `RootMotionSource` `AbilityTasks` works up to engine version 4.19 and 4.25+. Prediction is bugged for engine versions 4.20-4.24; however, the `AbilityTasks` still perform their function in multiplayer with minor net corrections and work perfectly in single player. It is possible to cherry pick the [prediction fix](https://github.com/EpicGames/UnrealEngine/commit/94107438dd9f490e7b743f8e13da46927051bf33#diff-65f6196f9f28f560f95bd578e07e290c) from 4.25 into a custom 4.20-4.24 engine.
+**注意：** `RootMotionSource` の `AbilityTasks` の予測は、エンジンバージョン 4.19 および 4.25+ で動作します。エンジンバージョン4.20～4.24では予測がバグっています。しかし、`AbilityTasks`はマルチプレイヤーでは細かいネットの修正でその機能を果たし、シングルプレイヤーでは完璧に動作します。4.20-4.24のカスタムエンジンに4.25の[Prediction fix](https://github.com/EpicGames/UnrealEngine/commit/94107438dd9f490e7b743f8e13da46927051bf33#diff-65f6196f9f28f560f95bd578e07e290c)を組み込むことは可能です。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-gc"></a>
-### 4.8 Gameplay Cues
+### 4.8 Gameplay Cues: ゲームプレイキュー
 
 <a name="concepts-gc-definition"></a>
-#### 4.8.1 Gameplay Cue Definition
-`GameplayCues` (`GC`) execute non-gameplay related things like sound effects, particle effects, camera shakes, etc. `GameplayCues` are typically replicated (unless explicitly `Executed`, `Added`, or `Removed` locally) and predicted.
+#### 4.8.1 ゲームプレイキューの定義
+`GameplayCue` (`GC`) は、サウンドエフェクト、パーティクルエフェクト、カメラシェイクなど、ゲームに関連しないものを実行します。`GameplayCue`は通常、（ローカルで明示的に`Executed`、`Added`、`Removed`しない限り）複製され、予測されます。
 
-We trigger `GameplayCues` by sending a corresponding `GameplayTag` with the **mandatory parent name of `GameplayCue.`** and an event type (`Execute`, `Add`, or `Remove`) to the `GameplayCueManager` via the `ASC`. `GameplayCueNotify` objects and other `Actors` that implement the `IGameplayCueInterface` can subscribe to these events based on the `GameplayCue's` `GameplayTag` (`GameplayCueTag`).
+`GameplayCue`のトリガーは、**`GameplayCue.`という必須の親名を持つ** 対応する`GameplayTag`とイベントタイプ（`Execute`, `Add`, `Remove`）を`ASC`を介して`GameplayCueManager`に送ることで行います。`GameplayCueNotify`オブジェクトや、`IGameplayCueInterface`を実装した他の`Actors`は、`GameplayCue`の`GameplayTag`(`GameplayCueTag`)に基づいて、これらのイベントを購読することができます。
 
-**Note:** Just to reiterate, `GameplayCue` `GameplayTags` need to start with the parent `GameplayTag` of `GameplayCue`. So for example, a valid `GameplayCue` `GameplayTag` might be `GameplayCue.A.B.C`.
+**注意：** 繰り返しになりますが、`GameplayCue`の`GameplayTags`は`GameplayCue.`を親とする`GameplayTag`から始まる必要があります。例えば、有効な`GameplayCue`の`GameplayTag`は`GameplayCue.A.B.C`ということになります。
 
-There are two classes of `GameplayCueNotifies`, `Static` and `Actor`. They respond to different events and different types of `GameplayEffects` can trigger them. Override the corresponding event with your logic.
+`GameplayCueNotifies`には、`Static`と`Actor`の2つのクラスがあります。これらは異なるイベントに反応し、異なるタイプの`GameplayEffects`がそれらをトリガーすることができます。対応するイベントをあなたのロジックでオーバーライドしてください。
 
 | `GameplayCue` Class                                                                                                                  | Event             | `GameplayEffect` Type    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`GameplayCueNotify_Static`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UGameplayCueNotify_Static/index.html) | `Execute`         | `Instant` or `Periodic`  | Static `GameplayCueNotifies` operate on the `ClassDefaultObject` (meaning no instances) and are perfect for one-off effects like hit impacts.                                                                                                                                                                                                                                                                                                                                                                        |
-| [`GameplayCueNotify_Actor`](https://docs.unrealengine.com/en-US/BlueprintAPI/GameplayCueNotify/index.html)                           | `Add` or `Remove` | `Duration` or `Infinite` | Actor `GameplayCueNotifies` spawn a new instance when `Added`. Because these are instanced, they can do actions over time until they are `Removed`. These are good for looping sounds and particle effects that will be removed when the backing `Duration` or `Infinite` `GameplayEffect` is removed or by manually calling remove. These also come with options to manage how many are allowed to be `Added` at the same so that multiple applications of the same effect only start the sounds or particles once. |
+| [`GameplayCueNotify_Static`](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UGameplayCueNotify_Static/index.html) | `Execute`         | `Instant` or `Periodic`  | 静的な`GameplayCueNotifies`は、`ClassDefaultObject`（インスタンスを持たない）で動作し、ヒットの衝撃のような一回限りの効果に最適です。 |
+| [`GameplayCueNotify_Actor`](https://docs.unrealengine.com/en-US/BlueprintAPI/GameplayCueNotify/index.html)                           | `Add` or `Remove` | `Duration` or `Infinite` | アクター `GameplayCueNotifies` は `Added` されると新しいインスタンスを生成します。これらはインスタンス化されているので、`Removed`されるまで時間をかけてアクションを行うことができます。これらはループするサウンドやパーティクルエフェクトに適しており、バッキング`Duration`や`Infinite`の`GameplayEffect`が削除されたときや、手動でremoveを呼び出したときに削除されます。これらのエフェクトには、同時に追加できる数を管理するオプションがあり、同じエフェクトを複数回使用しても、サウンドやパーティクルの開始は一度だけになります。 |
 
-`GameplayCueNotifies` technically can respond to any of the events but this is typically how we use them.
+`GameplayCueNotifies`は技術的にはどのイベントにも対応できますが、一般的にはこのような使い方をします。
 
-**Note:** When using `GameplayCueNotify_Actor`, check `Auto Destroy on Remove` otherwise subsequent calls to `Add` that `GameplayCueTag` won't work.
+**注意：** `GameplayCueNotify_Actor` を使用する際には、`Auto Destroy on Remove` をチェックしてください。そうしないと、その後の `GameplayCueTag` の `Add` の呼び出しが機能しません。
 
-When using an `ASC` [Replication Mode](#concepts-asc-rm) other than `Full`, `Add` and `Remove` `GC` events will fire twice on Server players (listen server) - once for applying the `GE` and again from the "Minimal" `NetMultiCast` to the clients. However, `WhileActive` events will still only fire once. All events will only fire once on clients.
+`Full`以外の`ASC` [Replication Mode](#concepts-asc-rm)を使用している場合、`Add`と`Remove`の`GC`イベントはサーバープレイヤー(リッスンサーバー)に対して2回発生します。1回は`GE`を適用し、もう1回は `Minimal`の`NetMultiCast`からクライアントに送られます。ただし、`WhileActive`イベントはまだ1回しか発生しません。すべてのイベントは、クライアント上で一度だけ発生します。
 
-The Sample Project includes a `GameplayCueNotify_Actor` for stun and sprint effects. It also has a `GameplayCueNotify_Static` for the FireGun's projectile impact. These `GCs` can be optimized further by [triggering them locally](#concepts-gc-local) instead of replicating them through a `GE`. I opted for showing the beginner way of using them in the Sample Project.
+サンプルプロジェクトには、スタンとスプリントのエフェクト用の`GamplayCueNotify_Actor`が含まれています。また、FireGunのプロジェクタイル・インパクト用の`GameplayCueNotify_Static`も用意されています。これらの`GC`は、`GE`で再現するのではなく、[ローカルにトリガーする](#concepts-gc-local)ことで、さらに最適化することができます。サンプルプロジェクトでは、初心者向けの使い方を紹介することにしました。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-gc-trigger"></a>
-#### 4.8.2 Triggering Gameplay Cues
+#### 4.8.2 Gameplay Cueのトリガー
 
-From inside of a `GameplayEffect` when it is successfully applied (not blocked by tags or immunity), fill in the `GameplayTags` of all the `GameplayCues` that should be triggered.
+`GameplayEffect`が正常に適用されたとき(タグやイミュニティでブロックされていないとき)に、トリガーされるべきすべての`GameplayCue`の`GameplayTags`を記入します。
 
-![GameplayCue Triggered from a GameplayEffect](https://github.com/dohi/GASDocumentation/raw/master/Images/gcfromge.png)
+![GameplayEffectからトリガーされるGameplayCue](https://github.com/dohi/GASDocumentation/raw/master/Images/gcfromge.png)
 
-`UGameplayAbility` offers Blueprint nodes to `Execute`, `Add`, or `Remove` `GameplayCues`.
+`UGameplayAbility` はブループリントのノードに `Execute`, `Add`, `Remove` の `GameplayCue` を提供します。
 
-![GameplayCue Triggered from a GameplayAbility](https://github.com/dohi/GASDocumentation/raw/master/Images/gcfromga.png)
+![GameplayAbilityからトリガーされるGameplayCue](https://github.com/dohi/GASDocumentation/raw/master/Images/gcfromga.png)
 
-In C++, you can call functions directly on the `ASC` (or expose them to Blueprint in your `ASC` subclass):
+C++では、`ASC`で直接関数を呼び出すことができます（または`ASC`のサブクラスでブループリントに公開することもできます）。
 
 ```c++
 /** GameplayCues can also come on their own. These take an optional effect context to pass through hit result, etc */
@@ -2296,15 +2297,16 @@ void RemoveAllGameplayCues();
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-gc-local"></a>
-#### 4.8.3 Local Gameplay Cues
-The exposed functions for firing `GameplayCues` from `GameplayAbilities` and the `ASC` are replicated by default. Each `GameplayCue` event is a multicast RPC. This can cause a lot of RPCs. GAS also enforces a maximum of two of the same `GameplayCue` RPCs per net update. We avoid this by using local `GameplayCues` where we can. Local `GameplayCues` only `Execute`, `Add`, or `Remove` on the individual client.
+#### 4.8.3 ローカル・ゲームプレイ・キュー
+`GameplayAbilities`と`ASC`から `GameplayCue`を発行するための関数は、デフォルトでは複製されています。各`GameplayCue`イベントは、マルチキャストのRPCです。これにより、多くのRPCが発生する可能性があります。また、GASではネットの更新ごとに同じ`GameplayCue`のRPCを2つまでしか使用できないようになっています。これを避けるために、可能な限りローカルの`GameplayCue`を使用します。ローカルの`GameplayCue`は、個々のクライアント上で`Execute`、`Add`、`Remove`のみを実行します。
 
-Scenarios where we can use local `GameplayCues`:
-* Projectile impacts
-* Melee collision impacts
-* `GameplayCues` fired from animation montages
+ローカルな`GameplayCues`を使用することができるシナリオ。
 
-Local `GameplayCue` functions that you should add to your `ASC` subclass:
+* 射程距離の影響
+* メレーの衝突の衝撃
+* アニメーション・モンタージュから発せられる`GameplayCue`。
+
+ローカルの `GameplayCue` 関数は、`ASC` サブクラスに追加する必要があります。
 
 ```c++
 UFUNCTION(BlueprintCallable, Category = "GameplayCue", Meta = (AutoCreateRefTerm = "GameplayCueParameters", GameplayTagFilter = "GameplayCue"))
@@ -2335,26 +2337,26 @@ void UPAAbilitySystemComponent::RemoveGameplayCueLocal(const FGameplayTag Gamepl
 }
 ```
 
-If a `GameplayCue` was `Added` locally, it should be `Removed` locally. If it was `Added` via replication, it should be `Removed` via replication.
+`GameplayCue` がローカルで `Added` された場合は、ローカルで `Removed` されなければなりません。レプリケーションで追加された場合は、レプリケーションで削除されます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-gc-parameters"></a>
-#### 4.8.4 Gameplay Cue Parameters
-`GameplayCues` receive a `FGameplayCueParameters` structure containing extra information for the `GameplayCue` as a parameter. If you manually trigger the `GameplayCue` from a function on the `GameplayAbility` or the `ASC`, then you must manually fill in the `GameplayCueParameters` structure that is passed to the `GameplayCue`. If the `GameplayCue` is triggered by a `GameplayEffect`, then the following variables are automatically filled in on the `GameplayCueParameters` structure:
+#### 4.8.4 ゲームプレイキューのパラメータ
+`GameplayCue` は、`GameplayCue` の追加情報を含む `FGameplayCueParameters` 構造体をパラメータとして受け取ります。`GameplayAbility` や `ASC` の関数から `GameplayCue` を手動でトリガーする場合には、`GameplayCue` に渡される `GameplayCueParameters` 構造体を手動で埋める必要があります。`GameplayEffect`によって`GameplayCue`がトリガーされる場合は、以下の変数が`GameplayCueParameters`構造体に自動的に入力されます。
 
-* AggregatedSourceTags
-* AggregatedTargetTags
+* 集約されたソースタグ(AggregatedSourceTags)
+* AggregatedTargetTags（集約されたターゲットタグ）
 * GameplayEffectLevel
 * AbilityLevel
 * [EffectContext](#concepts-ge-context)
-* Magnitude (if the `GameplayEffect` has an `Attribute` for magnitude selected in the dropdown above the `GameplayCue` tag container and a corresponding `Modifier` that affects that `Attribute`)
+* マグニチュード (`GameplayEffect` が、`GameplayCue` タグコンテナの上のドロップダウンで選択されたマグニチュードの `Attribute` と、その `Attribute` に影響を与える対応する `Modifier` を持っている場合)
 
-The `SourceObject` variable in the `GameplayCueParameters` structure is potentially a good place to pass arbitrary data to the `GameplayCue` when triggering the `GameplayCue` manually.
+`GameplayCueParameters`構造体の`SourceObject`変数は、`GameplayCue`を手動でトリガーする際に、任意のデータを`GameplayCue`に渡すのに適した場所になる可能性があります。
 
-**Note:** Some of the variables in the parameters structure like `Instigator` might already exist in the `EffectContext`. The `EffectContext` can also contain a `FHitResult` for location of where to spawn the `GameplayCue` in the world. Subclassing `EffectContext` is potentially a good way to pass more data to `GameplayCues`, especially those triggered by a `GameplayEffect`.
+**注意：** パラメータ構造の変数の中には、`Instigator`のように、`EffectContext`の中に既に存在しているものもあります。また、`EffectContext`には、ワールド内のどこに`GameplayCue`を配置するかを示す`FHitResult`を含めることができます。`EffectContext`をサブクラス化することで、より多くのデータを`GameplayCue`、特に`GameplayEffect`によってトリガーされる`GameplayCue`に渡すことが可能になります。
 
-See the 3 functions in [`UAbilitySystemGlobals`](#concepts-asg) that populate the `GameplayCueParameters` structure for more information. They are virtual so you can override them to autopopulate more information.
+詳細については、[`UAbilitySystemGlobals`](#concepts-asg)にある、`GameplayCueParameters` 構造体を生成する3つの関数を参照してください。これらの関数は仮想的なものなので、オーバーライドしてより多くの情報を自動入力することができます。
 
 ```c++
 /** Initialize GameplayCue Parameters */
@@ -2367,25 +2369,25 @@ virtual void InitGameplayCueParameters(FGameplayCueParameters& CueParameters, co
 
 <a name="concepts-gc-manager"></a>
 #### 4.8.5 Gameplay Cue Manager
-By default, the `GameplayCueManager` will scan the entire game directory for `GameplayCueNotifies` and load them into memory on play. We can change the path where the `GameplayCueManager` scans by setting it in the `DefaultGame.ini`.
+デフォルトでは、`GameplayCueManager`はゲームディレクトリ全体をスキャンして`GameplayCueNotifies`を探し、プレイ時にメモリにロードします。`GameplayCueManager`がスキャンするパスは、`DefaultGame.ini`に設定することで変更できます。
 
 ```
 [/Script/GameplayAbilities.AbilitySystemGlobals]
 GameplayCueNotifyPaths="/Game/GASDocumentation/Characters"
 ```
 
-We do want the `GameplayCueManager` to scan and find all of the `GameplayCueNotifies`; however, we don't want it to async load every single one on play. This will put every `GameplayCueNotify` and all of their referenced sounds and particles into memory regardless if they're even used in a level. In a large game like Paragon, this can be hundreds of megabytes of unneeded assets in memory and cause hitching and game freezes on startup.
+`GameplayCueManager`には、すべての`GameplayCueNotifies`をスキャンして見つけてもらいたいのですが、プレイ時にすべての`GameplayCueNotify`を非同期にロードしてもらいたくはありません。これでは、すべての`GameplayCueNotify`とその参照されるサウンドやパーティクルが、レベルで使用されているかどうかに関わらず、メモリに格納されてしまいます。Paragonのような大規模なゲームでは、これが数百メガバイトもの不要なアセットをメモリ上に置くことになり、起動時のヒッチやゲームのフリーズの原因になります。
 
-An alternative to async loading every `GameplayCue` on startup is to only async load `GameplayCues` as they're triggered in-game. This mitigates the unnecessary memory usage and potential game hard freezes while async loading every `GameplayCue` in exchange for potentially delayed effects for the first time that a specific `GameplayCue` is triggered during play. This potential delay is nonexistent for SSDs. I have not tested on a HDD. If using this option in the UE Editor, there may be slight hitches or freezes during the first load of GameplayCues if the Editor needs to compile particle systems. This is not an issue in builds as the particle systems will already be compiled.
+起動時にすべての`GameplayCue`を非同期にロードする代わりに、ゲーム内でトリガーされた`GameplayCue`だけを非同期にロードすることができます。これにより、すべての`GameplayCue`を非同期ロードする際の不要なメモリ使用やゲームのハードフリーズの可能性を軽減する代わりに、プレイ中に特定の`GameplayCue`が初めてトリガーされたときの効果が遅れる可能性があります。この潜在的な遅延は、SSDでは存在しません。HDDではテストしていません。UE Editorでこのオプションを使用する場合、Editorがパーティクルシステムをコンパイルする必要がある場合、GameplayCueの最初のロード中に若干の不具合やフリーズが発生することがあります。パーティクルシステムはすでにコンパイルされていますので、ビルド時には問題ありません。
 
-First we must subclass `UGameplayCueManager` and tell the `AbilitySystemGlobals` class to use our `UGameplayCueManager` subclass in `DefaultGame.ini`.
+まず、`UGameplayCueManager`をサブクラス化し、`DefaultGame.ini`で`AbilitySystemGlobals`クラスに`UGameplayCueManager`のサブクラスを使用するように指示します。
 
 ```
 [/Script/GameplayAbilities.AbilitySystemGlobals]
 GlobalGameplayCueManagerClass="/Script/ParagonAssets.PBGameplayCueManager"
 ```
 
-In our `UGameplayCueManager` subclass, override `ShouldAsyncLoadRuntimeObjectLibraries()`.
+`UGameplayCueManager`のサブクラスでは、`ShouldAsyncLoadRuntimeObjectLibraries()`をオーバーライドします。
 
 ```c++
 virtual bool ShouldAsyncLoadRuntimeObjectLibraries() const override
@@ -2397,71 +2399,73 @@ virtual bool ShouldAsyncLoadRuntimeObjectLibraries() const override
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-gc-prevention"></a>
-#### 4.8.6 Prevent Gameplay Cues from Firing
-Sometimes we don't want `GameplayCues` to fire. For example if we block an attack, we may not want to play the hit impact attached to the damage `GameplayEffect` or play a custom one instead. We can do this inside of [`GameplayEffectExecutionCalculations`](#concepts-ge-ec) by calling `OutExecutionOutput.MarkGameplayCuesHandledManually()` and then manually sending our `GameplayCue` event to the `Target` or `Source's` `ASC`.
+#### 4.8.6 Gameplay Cuesの発火防止
+時には、`GameplayCues`を発火させたくない場合があります。例えば、攻撃をブロックした場合、ダメージの`GameplayEffect`に付随するヒット・インパクトを再生せず、代わりにカスタムのものを再生したい場合があります。これは[`GameplayEffectExecutionCalculations`](#concepts-ge-ec)の中で、`OutExecutionOutput.MarkGameplayCuesHandledManually()`を呼び出して、`Target`や`Source'の`ASC`に`GameplayCue`イベントを手動で送信することで実現できます。
 
-If you never want any `GameplayCues` to fire on a specific `ASC`, you can set `AbilitySystemComponent->bSuppressGameplayCues = true;`.
+特定の`ASC`に対して`GameplayCues`を絶対に発生させたくない場合は、`AbilitySystemComponent->bSuppressGameplayCues = true;`と設定します。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-gc-batching"></a>
 #### 4.8.7 Gameplay Cue Batching
-Each `GameplayCue` triggered is an unreliable NetMulticast RPC. In situations where we fire multiple `GCs` at the same time, there are a few optimization methods to condense them down into one RPC or save bandwidth by sending less data.
+`GameplayCue`がトリガーされるたびに、unreliableなNetMulticast RPCが発生します。複数の`GC`を同時に起動する状況では、それらを1つのRPCに凝縮したり、データの送信量を減らして帯域幅を節約したりする最適化方法がいくつかあります。
 
 <a name="concepts-gc-batching-manualrpc"></a>
-##### 4.8.7.1 Manual RPC
-Say you have a shotgun that shoots eight pellets. That's eight trace and impact `GameplayCues`. [GASShooter](https://github.com/dohi/GASShooter) takes the lazy approach of combining them into one RPC by stashing all of the trace information into the [`EffectContext`](#concepts-ge-ec) as [`TargetData`](#concepts-targeting-data). While this reduces the RPCs from eight to one, it still sends a lot of data over the network in that one RPC (~500 bytes). A more optimized approach is to send an RPC with a custom struct where you efficiently encode the hit locations or maybe you give it a random seed number to recreate/approximate the impact locations on the receiving side. The clients would then unpack this custom struct and turn back into [locally executed `GameplayCues`](#concepts-gc-local).
+##### 4.8.7.1 手動RPC
+例えば、8つのペレットを発射するショットガンがあるとします。これは、8つのトレースとインパクトのある `GameplayCues` です。[GASShooter](https://github.com/dohi/GASShooter)では、すべてのトレース情報を[`EffectContext`](#concepts-ge-ec)の中に[`TargetData`](#concepts-targeting-data)として格納することで、これらを1つのRPCにまとめるという怠惰な方法をとっています。この方法ではRPCを8つから1つに減らすことができますが、1つのRPCでネットワーク上に大量のデータ（～500バイト）が送信されます。より最適化されたアプローチとしては、ヒットした場所を効率的にエンコードしたカスタム構造体でRPCを送信するか、受信側でインパクトのある場所を再現/近似するためにランダムなシード番号を与えることが考えられます。クライアントはこのカスタム構造体を解凍して、[ローカルに実行される`GameplayCues`](#concepts-gc-local)に戻します。
 
-How this works:
-1. Declare a `FScopedGameplayCueSendContext`. This suppresses `UGameplayCueManager::FlushPendingCues()` until it falls out of scope, meaning all `GameplayCues` will be queued up until the `FScopedGameplayCueSendContext` falls out of scope.
-1. Override `UGameplayCueManager::FlushPendingCues()` to merge `GameplayCues` that can be batched together based on some custom `GameplayTag` into your custom struct and RPC it to clients.
-1. Clients receive the custom struct and unpack it into locally executed `GameplayCues`.
+この仕組みは
+1. `FScopedGameplayCueSendContext`を宣言します。これにより、`FScopedGameplayCueSendContext`がスコープから外れるまで、`UGameplayCueManager::FlushPendingCues()`が抑制され、すべての`GameplayCue`がキューイングされることになります。
+1. `UGameplayCueManager::FlushPendingCues()`をオーバーライドして、カスタムの`GameplayTag`に基づいてバッチ処理が可能な`GameplayCue`をカスタム構造体にマージし、クライアントにRPCする。
+1. クライアントはカスタム構造体を受け取り、それをローカルに実行される`GameplayCues`にアンパックします。
 
-This method can also be used when you need specific parameters for your `GameplayCues` that don't fit with what `GameplayCueParameters` offer and you don't want to add them to the `EffectContext` like damage numbers, crit indicator, broken shield indicator, was fatal hit indicator, etc.
+この方法は、`GameplayCueParameters`が提供しているパラメータではなく、`EffectContext`に追加したくないような特定のパラメータを`GameplayCues`に必要とする場合にも使用できます。例えば、ダメージ数、クリティカルインジケーター、ブレイクシールドインジケーター、フェイタルヒットインジケーターなどです。
 
 https://forums.unrealengine.com/development-discussion/c-gameplay-programming/1711546-fscopedgameplaycuesendcontext-gameplaycuemanager
 
 <a name="concepts-gc-batching-gcsonge"></a>
-##### 4.8.7.2 Multiple GCs on one GE
-All of the `GameplayCues` on a `GameplayEffect` are sent in one RPC already. By default, `UGameplayCueManager::InvokeGameplayCueAddedAndWhileActive_FromSpec()` will send the whole `GameplayEffectSpec` (but converted to `FGameplayEffectSpecForRPC`) in the unreliable NetMulticast regardless of the `ASC`'s `Replication Mode`. This could potentially be a lot of bandwidth depending on what is in the `GameplayEffectSpec`. We can potentially optimize this by setting the cvar `AbilitySystem.AlwaysConvertGESpecToGCParams 1`. This will convert `GameplayEffectSpecs` to `FGameplayCueParameter` structures and RPC those instead of the whole `FGameplayEffectSpecForRPC`. This potentially saves bandwidth but also has less information, depending on how the `GESpec` is converted to `GameplayCueParameters` and what your `GCs` need to know.
+##### 4.8.7.2 1つのGEに複数のGCがある場合
+`GameplayEffect`上のすべての`GameplayCue`は、すでに1つのRPCで送信されています。デフォルトでは、`UGameplayCueManager::InvokeGameplayCueAddedAndWhileActive_FromSpec()`は、`ASC`の`レプリケーション・モード`に関わらず、信頼性の低いNetMulticastで`GameplayEffectSpec`全体(ただし、`FGameplayEffectSpecForRPC`に変換されている)を送信します。これは、`GameplayEffectSpec`に何が含まれているかによって、多くの帯域幅を必要とする可能性があります。`AbilitySystem.AlwaysConvertGESpecToGCParams 1`を設定することで、これを最適化できる可能性があります。これにより、`GameplayEffectSpecs`が`FGameplayCueParameter`構造に変換され、`FGameplayEffectSpecForRPC`全体ではなく、それらをRPC化します。これにより、帯域幅を節約できる可能性がありますが、`GESpec` が `GameplayCueParameters` にどのように変換されるか、また、`GC` が何を知る必要があるかによって、情報が少なくなります。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-gc-events"></a>
-#### 4.8.8 Gameplay Cue Events
-`GameplayCues` respond to specific `EGameplayCueEvents`:
+#### 4.8.8 ゲームプレイキューイベント
+`GameplayCue` は特定の `EGameplayCueEvents` に反応します。
 
 | `EGameplayCueEvent` | Description                                                                                                                                                                                                                                                                                                                         |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OnActive`          | Called when a `GameplayCue` is activated (added).                                                                                                                                                                                                                                                                                   |
-| `WhileActive`       | Called when `GameplayCue` is active, even if it wasn't actually just applied (Join in progress, etc). This is not `Tick`! It's called once just like `OnActive` when a `GameplayCueNotify_Actor` is added or becomes relevant. If you need `Tick()`, just use the `GameplayCueNotify_Actor`'s `Tick()`. It's an `AActor` after all. |
-| `Removed`           | Called when a `GameplayCue` is removed. The Blueprint `GameplayCue` function that responds to this event is `OnRemove`.                                                                                                                                                                                                             |
-| `Executed`          | Called when a `GameplayCue` is executed: instant effects or periodic `Tick()`. The Blueprint `GameplayCue` function that responds to this event is `OnExecute`.                                                                                                                                                                     |
+| `OnActive`          | GameplayCue "が起動したときに呼び出される (追加) |
+| `WhileActive`       | 実際には適用されていなくても（Join in progressなど）、`GameplayCue`がアクティブになると呼び出されます。これは `Tick` ではありません。`OnActive` と同様に、`GamplayCueNotify_Actor` が追加されたり、関連性が出てきたときに一度だけ呼び出されます。もし`Tick()`が必要ならば、`GameplayCueNotify_Actor`の`Tick()`を使えばいいのです。これは `AActor` なのだから。 |
+| `Removed`           | `GameplayCue` が削除されたときに呼び出されます。このイベントに応答するブループリントの `GameplayCue` 関数は `OnRemove` です。 |
+| `Executed`          | `GameplayCue` が実行されたときに呼び出されます: インスタントエフェクトまたは定期的な `Tick()` です。このイベントに応答するブループリントの `GameplayCue` 関数は `OnExecute` です。 |
 
-Use `OnActive` for anything in your `GameplayCue` that happen at the start of the `GameplayCue` but is okay if late joiners miss. Use `WhileActive` for ongoing effects in the `GameplayCue` that you would want late joiners to see. For example, if you have a `GameplayCue` for a tower structure in a MOBA exploding, you would put the initial explosion particle system and explosion sound in `OnActive` and you would put any residual ongoing fire particles or sounds in the `WhileActive`. In this scenario, it wouldn't make sense for late joiners to replay the initial explosion from `OnActive`, but you would want them to see the persistent, looping fire effects on the ground after the explosion happened from `WhileActive`. `OnRemove` should clean up anything added in `OnActive` and `WhileActive`. `WhileActive` will be called every time an Actor enters the relevancy range of a `GameplayCueNotify_Actor`. `OnRemove` will be called every time an Actor leaves relevancy range of a `GameplayCueNotify_Actor`.
+`GameplayCue`の中で、`GameplayCue`の開始時に発生するが、遅れて参加した人が見逃しても構わないものには`OnActive`を使用します。`GameplayCue`の中で進行中のエフェクトで、遅れて参加した人に見てもらいたいものには`WhileActive`を使います。例えば、MOBAのタワー構造が爆発するという`GameplayCue`があった場合、最初の爆発パーティクルシステムと爆発音を`OnActive`に入れ、残りの進行中の火災パーティクルや音を`WhileActive`に入れます。このシナリオでは、遅れて参加した人が`OnActive`から最初の爆発を再生することは意味がありませんが、`WhileActive`から爆発が起こった後の地面上の持続的でループする火の効果を見てもらいたいと思います。`OnRemove`では、`OnActive`と`WhileActive`で追加されたものをクリーンアップします。`WhileActive` は、アクターが `GamplayCueNotify_Actor` の関連性の範囲に入るたびに呼び出されます。`OnRemove` はアクターが `GameplayCueNotify_Actor` の関連性のある範囲から離れる度に呼び出されます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-gc-reliability"></a>
-#### 4.8.9 Gameplay Cue Reliability
+#### 4.8.9 ゲームプレイキューの信頼性
 
-`GameplayCues` in general should be considered unreliable and thus unsuited for anything that directly affects gameplay.
+一般的に`GameplayCue`は信頼性が低く、ゲームプレイに直接影響を与えるものには適していないと考えられます。
 
-**Executed `GameplayCues`:** These `GameplayCues` are applied via unreliable multicasts and are always unreliable.
+**実行される`GameplayCues`:** これらの`GameplayCues`は信頼性のないマルチキャストで適用され、常に信頼性がありません。
 
-**`GameplayCues` applied from `GameplayEffects`:**
-* Autonomous proxy reliably receives `OnActive`, `WhileActive`, and `OnRemove`  
-`FActiveGameplayEffectsContainer::NetDeltaSerialize()` calls `UAbilitySystemComponent::HandleDeferredGameplayCues()` to call `OnActive` and `WhileActive`. `FActiveGameplayEffectsContainer::RemoveActiveGameplayEffectGrantedTagsAndModifiers()` makes the call to `OnRemoved`.
-* Simulated proxies reliably receive `WhileActive` and `OnRemove`  
-`UAbilitySystemComponent::MinimalReplicationGameplayCues`'s replication calls `WhileActive` and `OnRemove`. The `OnActive` event is called by an unreliable multicast.
+**`GameplayEffects`から適用される`GameplayCues`：**
 
-**`GameplayCues` applied without a `GameplayEffect`:**
-* Autonomous proxy reliably receives `OnRemove`  
-The `OnActive` and `WhileActive` events are called by an unreliable multicast.
-* Simulated proxies reliably receive `WhileActive` and `OnRemove`  
-`UAbilitySystemComponent::MinimalReplicationGameplayCues`'s replication calls `WhileActive` and `OnRemove`. The `OnActive` event is called by an unreliable multicast.
+* 自律的なプロキシが `OnActive`, `WhileActive`, `OnRemove` を確実に受信する。 
+`FActiveGameplayEffectsContainer::NetDeltaSerialize()`は`UAbilitySystemComponent::HandleDeferredGameplayCues()`を呼び出し、`OnActive`と`WhileActive`を呼び出します。`FActiveGameplayEffectsContainer::RemoveActiveGameplayEffectGrantedTagsAndModifiers()`は`OnRemoved`の呼び出しを行います。
+* シミュレートされたプロキシは、確実に `WhileActive` と `OnRemove` を受け取ります。 
+`UAbilitySystemComponent::MinimalReplicationGameplayCues` のレプリケーションは `WhileActive` と `OnRemove` を呼び出す。OnActive`イベントは、信頼性のないマルチキャストによって呼び出されます。
 
-If you need something in a `GameplayCue` to be 'reliable', then apply it from a `GameplayEffect` and use `WhileActive` to add the FX and `OnRemove` to remove the FX.
+**`GameplayEffect`を使用せずに`GameplayCues`を適用した場合：**
+
+* 自律型プロキシが確実に `OnRemove` を受信する。 
+信頼性のないマルチキャストによって、`OnActive`イベントと`WhileActive`イベントが呼び出されます。
+* シミュレートされたプロキシは、信頼性の高い `WhileActive` と `OnRemove` を受信します。 
+`UAbilitySystemComponent::MinimalReplicationGameplayCues` のレプリケーションは `WhileActive` と `OnRemove` を呼び出す。OnActive`イベントは、信頼性のないマルチキャストによって呼び出されます。
+
+`GameplayCue`に「信頼性」が必要な場合は、`GameplayEffect`から適用し、FXの追加には`WhileActive`を、FXの削除には`OnRemove`を使用してください。
 
 **[⬆ Back to Top](#table-of-contents)**
 
