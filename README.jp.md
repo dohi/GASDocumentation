@@ -2488,97 +2488,97 @@ UE 4.24からは、[`TargetData`](#concepts-targeting-data)を使用するため
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-p"></a>
-### 4.10 Prediction
-GAS comes out of the box with support for client-side prediction; however, it does not predict everything. Client-side prediction in GAS means that the client does not have to wait for the server's permission to activate a `GameplayAbility` and apply `GameplayEffects`. It can "predict" the server giving it permission to do this and predict the targets that it would apply `GameplayEffects` to. The server then runs the `GameplayAbility` network latency-time after the client activates and tells the client if he was correct or not in his predictions. If the client was wrong in any of his predictions, he will "roll back" his changes from his "mispredictions" to match the server.
+### 4.10 Prediction: 予測
+GASはクライアントサイド予測をサポートしていますが、すべてを予測するわけではありません。GASのクライアントサイド予測とは、クライアントが `GameplayAbility` を起動して `GameplayEffect` を適用する際に、サーバーからの許可を待つ必要がないということです。クライアントは、サーバーが許可を与えることを「予測」し、`GameplayEffects` を適用する対象を予測することができます。サーバーは、クライアントが起動した後、ネットワークのレイテンシータイムで`GameplayAbility`を実行し、クライアントの予測が正しかったかどうかをクライアントに伝えます。クライアントが自分の予測のどれかに間違いがあった場合、クライアントは「予測違い」からの変更をサーバーに合わせて「ロールバック」します。
 
-The definitive source for GAS-related prediction is `GameplayPrediction.h` in the plugin source code.
+GAS関連の予測の決定的なソースは、プラグインのソースコードにある`GameplayPrediction.h`です。
 
-Epic's mindset is to only predict what you "can get away with". For example, Paragon and Fortnite do not predict damage. Most likely they use [`ExecutionCalculations`](#concepts-ge-ec) for their damage which cannot be predicted anyway. This is not to say that you can't try to predict certain things like damage. By all means if you do it and it works well for you then that's great.
+Epicの考え方は、「逃げられる（訳注：ごまかしてそのままうまく通すことができる）」ものだけを予測するというものです。例えば、ParagonやFortniteはダメージを予測しません。ほとんどの場合、彼らはダメージに [`ExecutionCalculations`](#concepts-ge-ec) を使用していますが、これはいずれにせよ予測できません。これは、ダメージのような特定のものを予測しようとすることができないということではありません。もしあなたがそれをやってうまくいくなら、それは素晴らしいことです。
 
-> ... we are also not all in on a "predict everything: seamlessly and automatically" solution. We still feel player prediction is best kept to a minimum (meaning: predict the minimum amount of stuff you can get away with).
+> 私たちは、「すべてをシームレスかつ自動的に予測する」というソリューションには賛成していません。私たちは、プレイヤーの予測は最小限にとどめるのがベストだと考えています（つまり、逃れられる最小限のものを予測する）。
 
-*Dave Ratti from Epic's comment from the new [Network Prediction Plugin](#concepts-p-npp)*
+*[Network Prediction Plugin](#concepts-p-npp) EpicのDave Ratti氏のコメントです*
 
-**What is predicted:**
-> * Ability activation
-> *	Triggered Events
-> *	GameplayEffect application:
->    * Attribute modification (EXCEPTIONS: Executions do not currently predict, only attribute modifiers)
->    * GameplayTag modification
-> * Gameplay Cue events (both from within predictive gameplay effect and on their own)
-> * Montages
-> * Movement (built into UE4 UCharacterMovement)
+**何が予測されるか：**
+> * アビリティ起動
+> * イベントのトリガ
+> * GameplayEffectの適用
+> * Attributeの変更（例外：現在、実行は予測せず、属性の変更のみを行う）
+> * GameplayTagの修正
+> * GameplayCueイベント（予測されたゲームプレイ効果の中からのものと、単独のものがある
+> * モンタージュ
+> * ムーブメント(UE4 UCharacterMovementに組み込まれています)
 
-**What is not predicted:**
-> * GameplayEffect removal
-> * GameplayEffect periodic effects (dots ticking)
+**予測されないもの：**
+> * GameplayEffectの除去
+> * GameplayEffectの周期的な効果(ドットのTick)
 
-*From `GameplayPrediction.h`*
+*`GameplayPrediction.h`* より
 
-While we can predict `GameplayEffect` application, we cannot predict `GameplayEffect` removal. One way that we can work around this limitation is to predict the inverse effect when we want to remove a `GameplayEffect`. Say we predict a movement speed slow of 40%. We can predictively remove it by applying a movement speed buff of 40%. Then remove both `GameplayEffects` at the same time. This is not appropriate for every scenario and support for predicting `GameplayEffect` removal is still needed. Dave Ratti from Epic has expressed desire to add it to a [future iteration of GAS](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89).
+`GameplayEffect` の適用を予測することはできますが、`GameplayEffect` の除去を予測することはできません。この制限を回避する一つの方法は、`GameplayEffect` を除去したいときに、逆の効果を予測することです。例えば、移動速度が40%遅くなると予測します。予測して、40%の速度アップのバフを適用して除去することができます。そして、両方の`GameplayEffects`を同時に削除します。これは、すべてのシナリオに適しているわけではなく、 `GameplayEffects` の削除を予測するためのサポートが必要です。EpicのDave Ratti氏は、この機能を[将来のGASのイテレーション](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)に追加したいと表明しています。
 
-Because we cannot predict the removal of `GameplayEffects`, we cannot fully predict `GameplayAbility` cooldowns and there is no inverse `GameplayEffect` workaround for them. The server's replicated `Cooldown GE` will exist on the client and any attempts to bypass this (with `Minimal` replication mode for example) will be rejected by the server. This means clients with higher latencies take longer to tell the server to go on cooldown and to receive the removal of the server's `Cooldown GE`. This means players with higher latencies will have a lower rate of fire than players with lower latencies, giving them a disadvantage against lower latency players. Fortnite avoids this issue by using custom bookkeeping instead of `Cooldown GEs`.
+`GameplayEffects` の削除を予測することができないため、`GameplayAbility` のクールダウンを完全に予測することができず、`GameplayEffect` の逆方向のワークアラウンドもありません。サーバーに複製された `Cooldown GE` はクライアント上に存在し、これを回避しようとする試み(例えば `Minimal` レプリケーション・モードなど)は、サーバーによって拒否されます。つまり、レイテンシーの高いクライアントは、サーバーにクールダウンを指示したり、サーバーの `Cooldown GE` が解除されたことを受け取るまでに時間がかかります。つまり、レイテンシーの高いプレイヤーは、レイテンシーの低いプレイヤーに比べて発射レートが低くなり、レイテンシーの低いプレイヤーに対して不利になります。Fortniteでは `Cooldown GE` の代わりにカスタムブックキーピングを使うことでこの問題を回避しています。
 
-Regarding predicting damage, I personally do not recommend it despite it being one of the first things that most people try when starting with GAS. I especially do not recommend trying to predict death. While you can predict damage, doing so is tricky. If you mispredict applying damage, the player will see the enemy's health jump back up. This can be especially awkward and frustrating if you try to predict death. Say you mispredict a `Character's` death and it starts ragdolling only to stop ragdolling and continue shooting at you when the server corrects it.
+ダメージを予測することについては、GASを始めたときに多くの人が最初に試すことの一つであるにもかかわらず、個人的にはお勧めしません。特に、死を予測することはお勧めしません。ダメージを予測することはできますが、それはとても難しいことです。ダメージの予測を誤ると、敵のヘルスが跳ね上がってしまうのです。これは、死の予測をした場合、特に厄介で苛立たしいものになります。例えば、キャラクターの死を予測しなかった場合、そのキャラクターはラグドールを始めますが、サーバーが修正するとラグドールをやめてあなたに向かって撃ち続けます。
 
-**Note:** `Instant`	`GameplayEffects` (like `Cost GEs`) that change `Attributes` can be predicted on yourself seamlessly, predicting `Instant` `Attribute` changes to other characters will show a brief anomaly or "blip" in their `Attributes`. Predicted `Instant` `GameplayEffects` are actually treated like `Infinite` `GameplayEffects` so that they can be rolled back if mispredicted. When the server's `GameplayEffect` is applied, there potentially exists two of the same `GameplayEffect's` causing the `Modifier` to be applied twice or not at all for a brief moment. It will eventually correct itself but sometimes the blip is noticeable to players.
+**注意：** `属性` を変化させる瞬間的な `GameplayEffects` （`コストGE` のようなもの）は、自分自身に対してはシームレスに予測することができますが、他のキャラクターに対する瞬間的な `属性` の変化を予測すると、その `属性` に短時間の異常や "blip（訳注：乱高下、急変）" が表示されます。予測された`Instant`の`GameplayEffects`は実際には`Infinite`の`GameplayEffects`と同じように扱われるので、予測が外れた場合はロールバックすることができます。サーバーの`GameplayEffect`が適用されると、同じ`GameplayEffect`が2つ存在する可能性があり、一瞬`Modifier`が2回適用されたり、全く適用されないことがあります。最終的には修正されますが、プレイヤーにはこの現象が目立つことがあります。
 
-Problems that GAS's prediction implementation is trying to solve:
-> 1. "Can I do this?" Basic protocol for prediction.
-> 2. "Undo" How to undo side effects when a prediction fails.
-> 3. "Redo" How to avoid replaying side effects that we predicted locally but that also get replicated from the server.
-> 4. "Completeness" How to be sure we /really/ predicted all side effects.
-> 5. "Dependencies" How to manage dependent prediction and chains of predicted events.
-> 6. "Override" How to override state predictively that is otherwise replicated/owned by the server.
+GASの予測実装が解決しようとしている問題点
+> 1. "こんなことができるの？" 予測のための基本プロトコル。
+> 2. "Undo" 予測が失敗したときに副作用を元に戻す方法。
+> 3. やり直し（Redo） ローカルで予測した副作用がサーバーからも複製された場合、それを再生しないようにする方法。
+> 4. "Completeness "全ての副作用を本当に予測したかどうかを確認する方法。
+> 5. "Dependencies" 依存性のある予測と予測されたイベントの連鎖を管理する方法。
+> 6. "オーバーライド" サーバーによって複製/所有されている状態を予測的にオーバーライドする方法。
 
-*From `GameplayPrediction.h`*
+*`GameplayPrediction.h` より*
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-p-key"></a>
-#### 4.10.1 Prediction Key
-GAS's prediction works on the concept of a `Prediction Key` which is an integer identifier that the client generates when he activates a `GameplayAbility`.
+#### 4.10.1 Prediction Key: 予測キー
+GASの予測は、クライアントが`GameplayAbility`を有効にする際に生成する整数の識別子である`Prediction Key`の概念で動作します。
 
-* Client generates a prediction key when it activates a `GameplayAbility. This is the `Activation Prediction Key`.
-* Client sends this prediction key to the server with `CallServerTryActivateAbility()`.
-* Client adds this prediction key to all `GameplayEffects` that it applies while the prediction key is valid.
-* Client's prediction key falls out of scope. Further predicted effects in the same `GameplayAbility` need a new [Scoped Prediction Window](#concepts-p-windows).
-
-
-* Server receives the prediction key from the client.
-* Server adds this prediction key to all `GameplayEffects` that it applies.
-* Server replicates the prediction key back to the client.
+* クライアントは、`GameplayAbility`を起動するときに予測キーを生成します。これが `Activation Prediction Key` です。
+* クライアントはこの予測キーを `CallServerTryActivateAbility()` でサーバに送信します。
+* クライアントは、予測キーが有効な間に適用するすべての `GameplayEffects` に、この予測キーを追加します。
+* クライアントの予測キーが範囲外になる。同じ`GameplayAbility`の中でさらに予測されるエフェクトは、新しい[Scoped Prediction Window](#concepts-p-windows)が必要になります。
 
 
-* Client receives replicated `GameplayEffects` from the server with the prediction key used to apply them. If any of the replicated `GameplayEffects` match the `GameplayEffects` that the client applied with the same prediction key, they were predicted correctly. There will temporarily be two copies of the `GameplayEffect` on the target until the client removes its predicted one.
-* Client receives the prediction key back from the server. This is the `Replicated Prediction Key`. This prediction key is now marked stale.
-* Client removes **all** `GameplayEffects` that it created with the now stale replicated prediction key. `GameplayEffects` replicated by the server will persist. Any `GameplayEffects` that the client added and didn't receive a matching replicated version from the server were mispredicted.
+* サーバーがクライアントから予測キーを受け取ります。
+* サーバーは、適用するすべての`GameplayEffects`にこの予測キーを追加します。
+* サーバーは予測キーをクライアントに複製します。
 
-Prediction keys are guaranteed to be valid during an atomic grouping of instructions "window" in `GameplayAbilities` starting with `Activation` from the activation prediction key. You can think of this as being only valid during one frame. Any callbacks from latent action `AbilityTasks` will no longer have a valid prediction key unless the `AbilityTask` has a built-in Synch Point which generates a new [Scoped Prediction Window](#concepts-p-windows).
+
+* クライアントはサーバーから複製された`GameplayEffects`を、それを適用するために使用された予測キーとともに受け取ります。複製された`GameplayEffects`の中に、クライアントが同じ予測キーで適用した`GameplayEffects`と一致するものがあれば、それらは正しく予測されたことになります。クライアントが予測したものを削除するまで、ターゲット上には一時的に2つの`GameplayEffect`のコピーが存在します。
+* クライアントはサーバーから予測キーを受け取ります。これが `Replicated Prediction Key` です。この予測キーは現在、古くなったとマークされています。
+* クライアントは、古い複製予測キーで作成した**すべての**`GameplayEffects`を削除します。サーバーで複製された`GameplayEffects`は持続します。クライアントが追加した`GameplayEffects`で、サーバーから一致するレプリケートされたバージョンを受け取らなかったものは、予測ミスです。
+
+予測キーは、アクティベーション予測キーから`Activation`で始まる`GameplayAbilities`の命令「ウィンドウ」のアトミックなグループ化の間、有効であることが保証されます。これは1フレームの間だけ有効であると考えることができます。潜在的なアクションである`AbilityTask`からのコールバックは、`AbilityTask`が新しい[Scoped Prediction Window](#concepts-p-windows)を生成するビルトインのSynch Pointを持っていない限り、有効な予測キーを持たなくなります。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-p-windows"></a>
-#### 4.10.2 Creating New Prediction Windows in Abilities
-To predict more actions in callbacks from `AbilityTasks`, we need to create a new Scoped Prediction Window with a new Scoped Prediction Key. This is sometimes referred to as a Synch Point between the client and server. Some `AbilityTasks` like all of the input related ones come with built-in functionality to create a new scoped prediction window, meaning atomic code in the `AbilityTasks'` callbacks have a valid scoped prediction key to use. Other tasks like the `WaitDelay` task do not have built-in code to create a new scoped prediction window for its callback. If you need to predict actions after an `AbilityTask` that does not have built-in code to create a scoped prediction window like `WaitDelay`, we must manually do that using the `WaitNetSync` `AbilityTask` with the option `OnlyServerWait`. When the client hits a `WaitNetSync` with `OnlyServerWait`, it generates a new scoped prediction key based on the `GameplayAbility's` activation prediction key, RPCs it to the server, and adds it to any new `GameplayEffects` that it applies. When the server hits a `WaitNetSync` with `OnlyServerWait`, it waits until it receives the new scoped prediction key from the client before continuing. This scoped prediction key does the same dance as activation prediction keys - applied to `GameplayEffects` and replicated back to clients to be marked stale. The scoped prediction key is valid until it falls out of scope, meaning the scoped prediction window has closed. So again, only atomic operations, nothing latent, can use the new scoped prediction key.
+#### 4.10.2 アビリティの新しい予測ウィンドウの作成
+`AbilityTasks`からのコールバックでより多くのアクションを予測するには、新しいScoped Prediction Keyで新しいScoped Prediction Windowを作成する必要があります。これは、クライアントとサーバー間のSynch Pointと呼ばれることもあります。入力関連のすべての `AbilityTasks` のような一部の `AbilityTasks` には、新しいScoped Prediction Windowを作成する機能が組み込まれており、`AbilityTasks` のコールバックに含まれるアトミックコードは、使用する有効なScoped Prediction Keyを持っていることになります。`WaitDelay`タスクのような他のタスクには、コールバックに新しいScoped Prediction Windowを作成するコードが組み込まれていません。そのような`AbilityTask` の後にアクションを予測する必要がある場合は、`WaitNetSync`  `AbilityTask` にオプション `OnlyServerWait` を指定して、手動で行う必要があります。クライアントが `WaitNetSync` で `OnlyServerWait` を指定してヒットすると、`GameplayAbility` の起動予測キーに基づいて新しいScoped Prediction Keyを生成し、それをサーバーに RPC して、適用する新しい `GameplayEffects` に追加します。サーバーは、`OnlyServerWait`で`WaitNetSync`にヒットすると、クライアントから新しいScoped Prediction Keyを受け取るまで待ってから続行します。このScoped Prediction Keyは、アクティベーション予測キーと同じように、`GameplayEffects`に適用され、クライアントにレプリケートされて古くなったとマークされます。Scoped Prediction Keyは、スコープから外れるまで、つまりScoped Prediction Windowが閉じてしまうまで有効です。この場合も、Scoped Prediction Keyを使用できるのは、アトミックな操作のみで、潜在的なものはありません。
 
-You can create as many scoped prediction windows as you need.
+Socped Prediction Windowは、必要な数だけ作成できます。
 
-If you would like to add the synch point functionality to your own custom `AbilityTasks`, look at how the input ones essentially inject the `WaitNetSync` `AbilityTask` code into them.
+Synch Pointの機能を独自のカスタム`AbilityTask`に追加したい場合は、入力されたものがどのように`WaitNetSync` `AbilityTask`のコードを注入するかを見てください。
 
-**Note:** When using `WaitNetSync`, this does block the server's `GameplayAbility` from continuing execution until it hears from the client. This could potentially be abused by malicious users who hack the game and intentionally delay sending their new scoped prediction key. While Epic uses the `WaitNetSync` sparingly, it recommends potentially building a new version of the `AbilityTask` with a delay that automatically continues without the client if this is a concern for you.
+**注意：** `WaitNetSync` を使用すると、クライアントからの連絡があるまで、サーバーの `GameplayAbility` の実行が継続されないようにブロックされます。これは、ゲームをハックして、新しいScoped Prediction Keyの送信を意図的に遅らせる悪質なユーザーに悪用される可能性があります。Epicでは、`WaitNetSync` の使用を控えていますが、この問題が懸念される場合は、クライアントを介さずに自動的に実行が継続されるような、遅延時間のある`AbilityTask`の新バージョンを構築することをお勧めします。
 
-The Sample Project uses `WaitNetSync` in the Sprint `GameplayAbility` to create a new scoped prediction window every time we apply the stamina cost so that we can predict it. Ideally we want a valid prediction key when applying costs and cooldowns.
+サンプルプロジェクトでは、スプリントの `GameplayAbility` で `WaitNetSync` を使用して、スタミナコストを適用するたびに新しいScoped Prediction Windowを作成し、予測できるようにしています。理想的には、コストやクールダウンを適用する際に有効な予測キーが欲しいところです。
 
-If you have a predicted `GameplayEffect` that is playing twice on the owning client, your prediction key is stale and you're experiencing the "redo" problem. You can usually solve this by putting a `WaitNetSync` `AbilityTask` with `OnlyServerWait` right before you apply the `GameplayEffect` to create a new scoped prediction key.
+予測された`GameplayEffect`が所有するクライアントで2回再生されている場合、予測キーが古く、「やり直し」の問題が発生しています。通常は、`GameplayEffect`を適用する直前に`WaitNetSync`の`AbilityTask`に`OnlyServerWait`を付けて、新しいScoped Prediction Keyを作成することで解決できます。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-p-spawn"></a>
-#### 4.10.3 Predictively Spawning Actors
-Spawning `Actors` predictively on clients is an advanced topic. GAS does not provide functionality to handle this out of the box (the `SpawnActor` `AbilityTask` only spawns the `Actor` on the server). The key concept is to spawn a replicated `Actor` on both the client and the server.
+#### 4.10.3 予測的に産み出されるアクター
+クライアント上で予測的に `Actor` を生成することは、高度なトピックです。GAS はこれを扱う機能を提供していません (`SpawnActor` `AbilityTask` は、サーバー上の `Actor` を生成するだけです)。重要なコンセプトは、クライアントとサーバーの両方で複製された `Actor` を生成することです。
 
-If the `Actor` is just cosmetic or doesn't serve any gameplay purpose, the simple solution is to override the `Actor's` `IsNetRelevantFor()` function to restrict the server from replicating to the owning client. The owning client would have his locally spawned version and the server and other clients would have the server's replicated version.
+もし、`Actor` が単なる化粧品であったり、ゲーム上の目的を果たさないのであれば、`Actor` の `IsNetRelevantFor()` 関数をオーバーライドして、サーバーが所有するクライアントへの複製を制限することで、簡単に解決できます。所有するクライアントはローカルにスポーンされたバージョンを持ち、サーバーや他のクライアントはサーバーの複製されたバージョンを持つことになります。
 ```c++
 bool APAReplicatedActorExceptOwner::IsNetRelevantFor(const AActor * RealViewer, const AActor * ViewTarget, const FVector & SrcLocation) const
 {
@@ -2586,23 +2586,23 @@ bool APAReplicatedActorExceptOwner::IsNetRelevantFor(const AActor * RealViewer, 
 }
 ```
 
-If the spawned `Actor` affects gameplay like a projectile that needs to predict damage, then you need advanced logic that is outside of the scope of this documentation. Look at how UnrealTournament predictively spawns projectiles on Epic Games' GitHub. They have a dummy projectile spawned only on the owning client that synchs up with the server's replicated projectile.
+スポーンされた `Actor` が、ダメージを予測する必要のある投射物のようにゲームプレイに影響を与える場合は、このドキュメントの範囲外である高度なロジックが必要になります。Epic Games の GitHub で、UnrealTournament が予測して投射物をスポーンする方法を見てみましょう。ここでは、所有するクライアント上でのみ生成されるダミーの投射物を用意し、サーバーの複製された投射物と同期させています。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-p-future"></a>
-#### 4.10.4 Future of Prediction in GAS
-`GameplayPrediction.h` states in the future they could potentially add functionality for predicting `GameplayEffect` removal and periodic `GameplayEffects`.
+#### 4.10.4 GASでの予測の将来性
+`GameplayPrediction.h`では、将来的に `GameplayEffect` の除去や周期的な`GameplayEffect` を予測する機能を追加する可能性があるとしています。
 
-Dave Ratti from Epic has [expressed interest](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89) in fixing the `latency reconciliation` problem for predicting cooldowns, disadvantaging players with higher latencies versus players with lower latencies.
+EpicのDave Ratti氏は、クールダウンを予測する際に、レイテンシーが高いプレイヤーと低いプレイヤーでは不利になるという「レイテンシーリコンシリエーション」の問題を修正することに興味を示しています(https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)。
 
-The new [`Network Prediction` plugin](#concepts-p-npp) by Epic is expected to be fully interoperable with the GAS like the `CharacterMovementComponent` *was* before it.
+Epicによる新しい[Network Prediction plugin](#concepts-p-npp)は、以前のCharacterMovementComponentのように、GASと完全に相互運用できるようになることが期待されています。
 
 **[⬆ Back to Top](#table-of-contents)**
 
 <a name="concepts-p-npp"></a>
-#### 4.10.5 Network Prediction Plugin
-Epic recently started an initiative to replace the `CharacterMovementComponent` with a new `Network Prediction` plugin. This plugin is still in its very early stages but is available to very early access on the Unreal Engine GitHub. It's too soon to tell which future version of the Engine that it will make its experimental beta debut in.
+#### 4.10.5 Network Prediction プラグイン
+Epic は最近、 `CharacterMovementComponent`を新しい`Network Prediction`プラグインで置き換える取り組みを開始しました。このプラグインはまだ非常に初期の段階ですが、Unreal Engine の GitHub で非常に早い段階でアクセスすることができます。このプラグインが将来的にどのバージョンのエンジンで実験的なベータ版としてデビューするかは、現時点ではわかりません。
 
 **[⬆ Back to Top](#table-of-contents)**
 
